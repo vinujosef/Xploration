@@ -88,7 +88,7 @@ public class Company extends Agent{
             public void action() {
                 ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.AGREE));
                 if(msg == null) return;
-                System.out.println("Company has got accepted to the Spacecraft");
+                System.out.println("Company has got accepted to the Spacecraft!");
             }
 
             @Override
