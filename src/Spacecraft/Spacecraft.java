@@ -18,6 +18,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -29,7 +31,9 @@ public class Spacecraft extends Agent{
     public final static String SPACECRAFT = "Spacecraft"; 
     DateTime dt_now = new DateTime();
     DateTime dt_in1min = new DateTime();
-    
+    //maybe we shall discuss about the way to store the companys' names
+    String[] ComN = new String[]{"","","","","","",""};
+    String Name = new String();
     
     protected void setup(){
         System.out.println(getLocalName()+ ": has entered into the system");
@@ -75,11 +79,27 @@ public class Spacecraft extends Agent{
                     }
                     
                     else{
+                        Name = (msg.getSender()).getLocalName();
+                    	Pattern pattern = Pattern.compile(Name);
+                    	int i;
+                    	for(i=0;i<7;i++){
+                    		Matcher matcher = pattern.matcher(ComN[i]);
+                    		//reply->failure
+                    		if(matcher.matches())
+                    		{
+                    			registration_reply.setPerformative(ACLMessage.FAILURE);
+                    			myAgent.send(registration_reply);
+                                System.out.println(myAgent.getLocalName() + " sent a FAILURE to " + (msg.getSender()).getLocalName());
+                                break;
+                    		}
+                    	}
                         //reply ->accept
-                        registration_reply.setPerformative(ACLMessage.AGREE);
-                        myAgent.send(registration_reply);
-                        System.out.println(myAgent.getLocalName() + " sent a AGREE to " + (msg.getSender()).getLocalName());
-                        
+                        if(i==7)
+                        {
+                            registration_reply.setPerformative(ACLMessage.AGREE);
+                            myAgent.send(registration_reply);
+                            System.out.println(myAgent.getLocalName() + " sent a AGREE to " + (msg.getSender()).getLocalName());
+                        }
                     }
                 }
                 
