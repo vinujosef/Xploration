@@ -86,7 +86,7 @@ public class Company extends Agent{
         {
             @Override
             public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.AGREE));
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.ACCEPT/*ACLMessage.AGREE*/));
                 if(msg == null) return;
                 System.out.println("Company has got accepted to the Spacecraft!");
             }
@@ -97,6 +97,50 @@ public class Company extends Agent{
             }
         });
         
+        addBehaviour(new SimpleBehaviour(this)
+        {
+            @Override
+            public void action() {
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.NOT_UNDERSTOOD));
+                if(msg == null) return;
+                System.out.println("Company has got not undersood from Spacecraft");
+            }
+
+            @Override
+            public boolean done() {
+                return true;
+            }
+        });
+        
+        addBehaviour(new SimpleBehaviour(this)
+        {
+            @Override
+            public void action() {
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.FAILURE));
+                if(msg == null) return;
+                System.out.println("Spacecraft has already been registered.");
+            }
+
+            @Override
+            public boolean done() {
+                return true;
+            }
+        });
+        
+        addBehaviour(new SimpleBehaviour(this)
+        {
+            @Override
+            public void action() {
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+                if(msg == null) return;
+                System.out.println("Registration is complete.");
+            }
+
+            @Override
+            public boolean done() {
+                return true;
+            }
+        });
         
     }
 }

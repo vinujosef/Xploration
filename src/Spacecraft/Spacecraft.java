@@ -38,6 +38,10 @@ public class Spacecraft extends Agent{
     protected void setup(){
         System.out.println(getLocalName()+ ": has entered into the system");
         
+        /* I think the registration part is supposed to proceed after sending AGREE
+         * I'm putting this code as a comment. If you disagree, please fix.
+         *-----Begins here-----
+         
         //creating description
         DFAgentDescription dfd = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
@@ -51,12 +55,18 @@ public class Spacecraft extends Agent{
         } catch (FIPAException ex) {
             Logger.getLogger(Spacecraft.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+         *-----Ends here-----
+         */
+        
         DateTime finalcall = DateTime.now().plusMinutes(1);
 //        DateTime finalcall = DateTime.now().plusSeconds(10);
         System.out.println(getLocalName()+": registered in the DF");
 
+        /*
         dfd=null;
-        sd=null;  
+        sd=null;
+        */  
         
         addBehaviour(new CyclicBehaviour(this)
         {
@@ -99,22 +109,54 @@ public class Spacecraft extends Agent{
                             registration_reply.setPerformative(ACLMessage.AGREE);
                             myAgent.send(registration_reply);
                             System.out.println(myAgent.getLocalName() + " sent a AGREE to " + (msg.getSender()).getLocalName());
+                            
+                            //After sending AGREE, check if it's already registered
+                            register(SPACECRAFT);
+                            
                         }
                     }
                 }
-                
                 else{
                     // If not message arrives
                     block();
                 }
             }
-         
-            
-           
             
         });
         
         
     }
+    
+    protected void register(String type){
+    	
+    	//creating description
+        DFAgentDescription dfd = new DFAgentDescription();
+        ServiceDescription sd = new ServiceDescription();
+        sd.setName(this.getName());
+        sd.setType(SPACECRAFT);
+        dfd.addServices(sd);
+        
+    	try{
+    		DFAgentDescription[] dfdArray = DFService.search(this, dfd);
+    		int length = dfdArray.length;
+    		if(dfdslenght >= 1){
+    			registration_reply.setPerformative(ACLMessage.FAILURE);
+                myAgent.send(registration_reply);
+                System.out.println(myAgent.getLocalName() + " sent a FAILURE to " + (msg.getSender()).getLocalName());
+    		}
+    		else{
+    			DFService.register(this, dfd); //register
+    			registration_reply.setPerformative(ACLMessage.INFORM);
+                myAgent.send(registration_reply);
+                System.out.println(myAgent.getLocalName() + " sent a INFORM to " + (msg.getSender()).getLocalName());
+    		}
+    	}
+    	catch(FIPAException ex){
+    		ex.printStackTrace();
+    		Logger.getLogger(Spacecraft.class.getName()).log(Level.SEVERE, null, ex);
+    	}
+    	
+    }
+    
 }
 
