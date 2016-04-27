@@ -47,31 +47,27 @@ public class Spacecraft extends Agent{
 		ACLMessage receivedMsg;
 		
 		if(inTime.done()){
+			
+			receivedMsg = inTime.getMessage();
+			ACLMessage sendBackMsg = receivedMsg.createReply();
+			
 			try{
-				receivedMsg = inTime.getMessage();
+				
 				if(!(receivedMsg instanceof ACLMessage)){
-					ACLMessage sendBackMsg = new ACLMessage(ACLMessage.NOT_UNDERSTOOD);
-		    		sendBackMsg.addReceiver(inTime.getAgent().getAID());
-		    		sendBackMsg.setContent("Not Understood");
-		    		//sendBackMsg.setLanguage("English");
+		    		sendBackMsg.setPerformative(ACLMessage.NOT_UNDERSTOOD);
 		    		send(sendBackMsg);
 				}
 				else{
-					ACLMessage sendBackMsg = new ACLMessage(ACLMessage.AGREE);
-		    		sendBackMsg.addReceiver(inTime.getAgent().getAID());
-		    		sendBackMsg.setContent("Agree");
-		    		//sendBackMsg.setLanguage("English");
+		    		sendBackMsg.setPerformative(ACLMessage.AGREE);
 		    		send(sendBackMsg);
 		    		
 		    		ServiceDescription sd  = new ServiceDescription();
 		    		sd.setName(inTime.getAgent().getLocalName());
-		    		sd.setType("Company");
+		    		sd.setType("Spacecraft");
 		    		if(DFService.search(inTime.getAgent(), dfd).equals(sd)){
-		    			ACLMessage sendBackMsg2 = new ACLMessage(ACLMessage.FAILURE);
-			    		sendBackMsg2.addReceiver(inTime.getAgent().getAID());
-			    		sendBackMsg2.setContent("Failure");
-			    		//sendBackMsg2.setLanguage("English");
-			    		send(sendBackMsg2);
+		    			sendBackMsg = receivedMsg.createReply();
+		    			sendBackMsg.setPerformative(ACLMessage.FAILURE);
+			    		send(sendBackMsg);
 		    		}
 		    		else{
 		    			dfd.addServices(sd);
@@ -82,20 +78,15 @@ public class Spacecraft extends Agent{
 		    	        	e.printStackTrace(); 
 		    	        }
 		    			
-		    			ACLMessage sendBackMsg2 = new ACLMessage(ACLMessage.INFORM);
-			    		sendBackMsg2.addReceiver(inTime.getAgent().getAID());
-			    		sendBackMsg2.setContent("Inform");
-			    		//sendBackMsg2.setLanguage("English");
-			    		send(sendBackMsg2);
+		    			sendBackMsg = receivedMsg.createReply();
+			    		sendBackMsg.setPerformative(ACLMessage.INFORM);
+			    		send(sendBackMsg);
 		    		}
 		    		
 				}
 			}
-			catch(ReceiverBehaviour.TimedOut | NotYetReady e){
-				ACLMessage sendBackMsg = new ACLMessage(ACLMessage.REFUSE);
-	    		sendBackMsg.addReceiver(inTime.getAgent().getAID());
-	    		sendBackMsg.setContent("Refuse");
-	    		//sendBackMsg.setLanguage("English");
+			catch(ReceiverBehaviour.TimedOut e){
+	    		sendBackMsg.setPerformative(ACLMessage.REFUSE);
 	    		send(sendBackMsg);
 			} catch (FIPAException e) {
 				// TODO Auto-generated catch block
