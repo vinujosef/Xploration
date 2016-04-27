@@ -6,21 +6,58 @@
 package Company;
 
 import static com.sun.org.apache.xpath.internal.axes.HasPositionalPredChecker.check;
-import jade.core.Agent;
-import jade.core.behaviours.SimpleBehaviour;
+import jade.core.*;
+import jade.core.behaviours.*;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import Spacecraft.Spacecraft;
 
 /**
  *
  * @author Vinu
  */
+
+public class Company extends Agent{
+	protected void setup(){
+		System.out.println(getAID().getName()+" is ready.");
+		
+		String companyName = "Company05";
+		
+		// Assuming we know the Agent ID of the Spacecraft, let say the ID is SC01
+		
+		Spacecraft sc01 = new Spacecraft();
+		
+		// Create message to send to Spacecraft
+		ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+		msg.setContent("Registration request by " + companyName);
+		msg.addReceiver(sc01.getAID()); // add Agent (Spacecraft)
+		msg.setSender(getAID());
+		msg.setLanguage("English");
+		msg.setOntology("Xploration-Ontology"); // We fix this when we know the ontology
+		send(msg);
+		
+		addBehaviour(new CyclicBehaviour(this) 
+        {
+             public void action() 
+             {
+                ACLMessage msg = receive();
+                if (msg != null){
+                    System.out.println(msg.getContent());
+                }
+                else
+                	block();
+             }
+        });
+		
+	}
+	
+}
+
+/*
 public class Company extends Agent{
        
     private static final long serialVersionUID =1L;
@@ -86,9 +123,9 @@ public class Company extends Agent{
         {
             @Override
             public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.ACCEPT/*ACLMessage.AGREE*/));
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.AGREE));
                 if(msg == null) return;
-                System.out.println("Company has got accepted to the Spacecraft!");
+                System.out.println("Company has got ACCEPTED to the Spacecraft.");
             }
 
             @Override
@@ -103,7 +140,7 @@ public class Company extends Agent{
             public void action() {
                 ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.NOT_UNDERSTOOD));
                 if(msg == null) return;
-                System.out.println("Company has got not undersood from Spacecraft");
+                System.out.println("Company has got NOT UNDERSTOOD message from Spacecraft.");
             }
 
             @Override
@@ -118,7 +155,7 @@ public class Company extends Agent{
             public void action() {
                 ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.FAILURE));
                 if(msg == null) return;
-                System.out.println("Spacecraft has already been registered.");
+                System.out.println("Company has got FAILURE message from Spacecraft.");
             }
 
             @Override
@@ -131,9 +168,9 @@ public class Company extends Agent{
         {
             @Override
             public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.CONFIRM));
                 if(msg == null) return;
-                System.out.println("Registration is complete.");
+                System.out.println("Company has got CONFIRM message from Spacecraft.");
             }
 
             @Override
@@ -144,3 +181,4 @@ public class Company extends Agent{
         
     }
 }
+*/

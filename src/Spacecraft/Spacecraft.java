@@ -5,31 +5,115 @@
  */
 package Spacecraft;
 
-import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
+import static com.sun.org.apache.xpath.internal.axes.HasPositionalPredChecker.check;
+import jade.core.*;
+import jade.core.behaviours.*;
+import jade.core.behaviours.ReceiverBehaviour.NotYetReady;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import java.time.LocalDate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.joda.time.DateTime;
-import org.joda.time.Period;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  *
  * @author Vinu
  */
+
+public class Spacecraft extends Agent{
+	
+	MessageTemplate tplOntology;
+	DFAgentDescription dfd;
+	
+	public Spacecraft(){
+		super();
+		tplOntology = MessageTemplate.MatchOntology("Xploration-Ontology");
+		dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+	}
+	
+	protected void setup(){
+		System.out.println(getAID().getName()+" is ready.");
+		
+		ReceiverBehaviour inTime;
+		inTime = new ReceiverBehaviour(this, -1, null);
+		addBehaviour(inTime);
+		
+		ReceiverBehaviour timeOut;
+		timeOut = new ReceiverBehaviour(this, 100000, MessageTemplate.MatchPerformative(ACLMessage.REQUEST)); // Wait 100 sec for REQUEST before timeout
+		addBehaviour(timeOut);
+		
+		ACLMessage receivedMsg;
+		
+		if(inTime.done()){
+			try{
+				receivedMsg = inTime.getMessage();
+				if(!(receivedMsg instanceof ACLMessage)){
+					ACLMessage sendBackMsg = new ACLMessage(ACLMessage.NOT_UNDERSTOOD);
+		    		sendBackMsg.addReceiver(inTime.getAgent().getAID());
+		    		sendBackMsg.setContent("Not Understood");
+		    		//sendBackMsg.setLanguage("English");
+		    		send(sendBackMsg);
+				}
+				else{
+					ACLMessage sendBackMsg = new ACLMessage(ACLMessage.AGREE);
+		    		sendBackMsg.addReceiver(inTime.getAgent().getAID());
+		    		sendBackMsg.setContent("Agree");
+		    		//sendBackMsg.setLanguage("English");
+		    		send(sendBackMsg);
+		    		
+		    		ServiceDescription sd  = new ServiceDescription();
+		    		sd.setName(inTime.getAgent().getLocalName());
+		    		sd.setType("Company");
+		    		if(DFService.search(inTime.getAgent(), dfd).equals(sd)){
+		    			ACLMessage sendBackMsg2 = new ACLMessage(ACLMessage.FAILURE);
+			    		sendBackMsg2.addReceiver(inTime.getAgent().getAID());
+			    		sendBackMsg2.setContent("Failure");
+			    		//sendBackMsg2.setLanguage("English");
+			    		send(sendBackMsg2);
+		    		}
+		    		else{
+		    			dfd.addServices(sd);
+		    			try {  
+		    	            DFService.register(this, dfd );  
+		    	        }
+		    	        catch (FIPAException e) { 
+		    	        	e.printStackTrace(); 
+		    	        }
+		    			
+		    			ACLMessage sendBackMsg2 = new ACLMessage(ACLMessage.INFORM);
+			    		sendBackMsg2.addReceiver(inTime.getAgent().getAID());
+			    		sendBackMsg2.setContent("Inform");
+			    		//sendBackMsg2.setLanguage("English");
+			    		send(sendBackMsg2);
+		    		}
+		    		
+				}
+			}
+			catch(ReceiverBehaviour.TimedOut | NotYetReady e){
+				ACLMessage sendBackMsg = new ACLMessage(ACLMessage.REFUSE);
+	    		sendBackMsg.addReceiver(inTime.getAgent().getAID());
+	    		sendBackMsg.setContent("Refuse");
+	    		//sendBackMsg.setLanguage("English");
+	    		send(sendBackMsg);
+			} catch (FIPAException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+		}
+	}
+	
+}
+
+/*
+
 public class Spacecraft extends Agent{
     
     private static final long serialVersionUID =1L;
     public final static String SPACECRAFT = "Spacecraft"; 
-    DateTime dt_now = new DateTime();
+    DateTime dt_now = new Date();
     DateTime dt_in1min = new DateTime();
     //maybe we shall discuss about the way to store the companys' names
     String[] ComN = new String[]{"","","","","","",""};
@@ -37,10 +121,6 @@ public class Spacecraft extends Agent{
     
     protected void setup(){
         System.out.println(getLocalName()+ ": has entered into the system");
-        
-        /* I think the registration part is supposed to proceed after sending AGREE
-         * I'm putting this code as a comment. If you disagree, please fix.
-         *-----Begins here-----
          
         //creating description
         DFAgentDescription dfd = new DFAgentDescription();
@@ -56,17 +136,12 @@ public class Spacecraft extends Agent{
             Logger.getLogger(Spacecraft.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-         *-----Ends here-----
-         */
-        
         DateTime finalcall = DateTime.now().plusMinutes(1);
 //        DateTime finalcall = DateTime.now().plusSeconds(10);
         System.out.println(getLocalName()+": registered in the DF");
 
-        /*
         dfd=null;
         sd=null;
-        */  
         
         addBehaviour(new CyclicBehaviour(this)
         {
@@ -129,34 +204,11 @@ public class Spacecraft extends Agent{
     
     protected void register(String type){
     	
-    	//creating description
-        DFAgentDescription dfd = new DFAgentDescription();
-        ServiceDescription sd = new ServiceDescription();
-        sd.setName(this.getName());
-        sd.setType(SPACECRAFT);
-        dfd.addServices(sd);
-        
-    	try{
-    		DFAgentDescription[] dfdArray = DFService.search(this, dfd);
-    		int length = dfdArray.length;
-    		if(dfdslenght >= 1){
-    			registration_reply.setPerformative(ACLMessage.FAILURE);
-                myAgent.send(registration_reply);
-                System.out.println(myAgent.getLocalName() + " sent a FAILURE to " + (msg.getSender()).getLocalName());
-    		}
-    		else{
-    			DFService.register(this, dfd); //register
-    			registration_reply.setPerformative(ACLMessage.INFORM);
-                myAgent.send(registration_reply);
-                System.out.println(myAgent.getLocalName() + " sent a INFORM to " + (msg.getSender()).getLocalName());
-    		}
-    	}
-    	catch(FIPAException ex){
-    		ex.printStackTrace();
-    		Logger.getLogger(Spacecraft.class.getName()).log(Level.SEVERE, null, ex);
-    	}
+    	
     	
     }
     
 }
+
+*/
 
