@@ -7,8 +7,11 @@ package es.upm.platform05;
 
 import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.XplorationOntology;
+import es.upm.ontology.Location;
+import es.upm.ontology.ReleaseCapsule;
 import jade.content.Concept;
 import jade.content.lang.Codec;
+import jade.content.lang.Codec.CodecException;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
@@ -109,6 +112,9 @@ public class Spacecraft extends Agent{
                                 System.out.println("Registered successfuly  " + regRequest.getCompany());
                             }
                             send(registration_reply);
+                            // begins as02
+                            release(msg.getSender());
+                            // ends as02
 
                         } catch (Codec.CodecException e) {
                             e.printStackTrace();
@@ -125,6 +131,36 @@ public class Spacecraft extends Agent{
             }
         });
 
+    }
+    
+    // as02
+    
+    protected void release(AID receiver){
+        
+        Location location = new Location();
+        location.setX(new java.util.Random().nextInt());
+        location.setY(new java.util.Random().nextInt());
+    	
+    	addBehaviour(new CyclicBehaviour(this)
+		{
+			 public void action() {
+				 ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+				 msg.setOntology(ontology.getName());
+				 msg.setLanguage(codec.getName());
+				 msg.addReceiver(receiver);
+				 msg.setProtocol(ontology.PROTOCOL_RELEASE_CAPSULE);
+				 ReleaseCapsule releaseCapsule = new ReleaseCapsule();
+				 releaseCapsule.setLocation(location);
+				 try {
+					getContentManager().fillContent(msg, new Action(getAID(), releaseCapsule));
+					//System.out.println(myAgent.getLocalName() + " sending RELEASE CAPSULE to Spacecraft");
+                    send(msg);
+				} catch (CodecException | OntologyException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			 }
+		});
     }
     
 }

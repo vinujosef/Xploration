@@ -7,6 +7,8 @@ package es.upm.company05;
 
 import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.XplorationOntology;
+import es.upm.ontology.Location;
+import es.upm.ontology.Capsule;
 import jade.content.lang.Codec;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.OntologyException;
@@ -19,6 +21,8 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -178,6 +182,43 @@ public class Company extends Agent{
                 return false;
             }
         });
+    }
+    
+    protected void release(){
+    	addBehaviour(new SimpleBehaviour(this)
+    	{
+    		@Override
+    		public void action(){
+    			ACLMessage msg = receive(MessageTemplate.MatchOntology(ontology.PROTOCOL_RELEASE_CAPSULE));
+    			if(msg == null){
+    				return;
+    			}
+    			else{
+    				if(msg.getPerformative() != ACLMessage.INFORM){
+    					return;
+    				}
+    				else{
+    					try { 
+							if(msg.getContentObject() instanceof Location){
+								Location capsLocation = (Location) msg.getContentObject();
+								Capsule capsule = new Capsule();
+								capsule.setName("capsule01");
+							}
+						} catch (UnreadableException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+    				}
+    			}
+    			
+    		}
+
+			@Override
+			public boolean done() {
+				// TODO Auto-generated method stub
+				return false;
+			}
+    	});
     }
     
 }
