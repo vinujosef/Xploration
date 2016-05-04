@@ -178,6 +178,6 @@ public class Company extends Agent{
                 return false;
             }
         });
+
     }
-    
 }

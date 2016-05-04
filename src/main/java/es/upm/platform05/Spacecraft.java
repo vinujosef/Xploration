@@ -47,6 +47,7 @@ public class Spacecraft extends Agent{
         ServiceDescription sd = new ServiceDescription();
         sd.setName(this.getName());
         sd.setType(ontology.PROTOCOL_REGISTRATION);
+
         dfd.addServices(sd);
         
         try {
@@ -105,7 +106,6 @@ public class Spacecraft extends Agent{
                             }
                             else{
                                 registration_reply.setPerformative(ACLMessage.INFORM);
-
                                 System.out.println("Registered successfuly  " + regRequest.getCompany());
                             }
                             send(registration_reply);
@@ -115,7 +115,7 @@ public class Spacecraft extends Agent{
                         } catch (OntologyException e) {
                             e.printStackTrace();
                         }
-                  }
+                    }
                 }
                 
                 else{
