@@ -182,35 +182,29 @@ public class Company extends Agent{
                 return false;
             }
         });
-    }
-    
-    protected void release(){
-    	addBehaviour(new SimpleBehaviour(this)
+        
+        // as02
+        
+        addBehaviour(new SimpleBehaviour(this)
     	{
     		@Override
     		public void action(){
-    			ACLMessage msg = receive(MessageTemplate.MatchOntology(ontology.PROTOCOL_RELEASE_CAPSULE));
-    			if(msg == null){
+    			ACLMessage msg = receive(MessageTemplate.MatchProtocol(ontology.PROTOCOL_RELEASE_CAPSULE));
+    			if(msg == null || msg.getPerformative() != ACLMessage.INFORM){
     				return;
     			}
     			else{
-    				if(msg.getPerformative() != ACLMessage.INFORM){
-    					return;
-    				}
-    				else{
-    					try { 
-							if(msg.getContentObject() instanceof Location){
-								Location capsLocation = (Location) msg.getContentObject();
-								Capsule capsule = new Capsule();
-								capsule.setName("capsule01");
-							}
-						} catch (UnreadableException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+    				try { 
+						if(msg.getContentObject() instanceof Location){
+							Location capsLocation = (Location) msg.getContentObject();
+							Capsule capsule = new Capsule();
+							capsule.setName("capsule01");
 						}
-    				}
+					} catch (UnreadableException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
     			}
-    			
     		}
 
 			@Override
@@ -219,6 +213,7 @@ public class Company extends Agent{
 				return false;
 			}
     	});
+        
     }
-    
+   
 }
