@@ -7,11 +7,7 @@ package es.upm.platform05;
 
 import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.XplorationOntology;
-import es.upm.ontology.Location;
-import es.upm.ontology.ReleaseCapsule;
-import jade.content.Concept;
 import jade.content.lang.Codec;
-import jade.content.lang.Codec.CodecException;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
@@ -25,6 +21,7 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joda.time.DateTime;
@@ -34,12 +31,12 @@ import org.joda.time.DateTime;
  */
 public class Spacecraft extends Agent{
     
-     private static final long serialVersionUID =1L;
+    private static final long serialVersionUID =1L;
     public final static String REGISTRATION = "Registration";
     ACLMessage msg;
     XplorationOntology ontology = (XplorationOntology) XplorationOntology.getInstance();
     Codec codec = new SLCodec();
-    ArrayList<AID> companyList = new ArrayList<>();
+    ArrayList<String> companyList = new ArrayList<>();
     
     protected void setup(){
         System.out.println(getLocalName()+ " has entered into the system");
@@ -49,7 +46,7 @@ public class Spacecraft extends Agent{
         DFAgentDescription dfd = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setName(this.getName());
-        sd.setType(ontology.PROTOCOL_REGISTRATION);
+        sd.setType("Spacecraft");
 
         dfd.addServices(sd);
         
@@ -104,16 +101,21 @@ public class Spacecraft extends Agent{
 
                             if(companyList.contains(msg.getSender())){
                                 registration_reply.setPerformative(ACLMessage.FAILURE);
-
                                 System.out.println("Failed to register " + regRequest.getCompany() + ". Already registered.");
                             }
                             else{
                                 registration_reply.setPerformative(ACLMessage.INFORM);
-                                System.out.println("Registered successfuly  " + regRequest.getCompany());
+//                                the company should be added to the <companyList> for checking
+                                companyList.add(msg.getSender().getLocalName());
+                                System.out.println("Registered successfuly " + regRequest.getCompany());
+//                                for loop to check if the companies have been added into "companyList" array
+//                                for(int j=0; j < companyList.size(); j++) {
+//                                    System.out.println(companyList.get(j));
+//                                }
                             }
                             send(registration_reply);
                             // begins as02
-                            release(msg.getSender());
+//                            release(msg.getSender());
                             // ends as02
 
                         } catch (Codec.CodecException e) {

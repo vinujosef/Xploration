@@ -49,7 +49,7 @@ public class Company extends Agent{
             @Override
             public void action() {
                 try {
-                    Thread.sleep(700);
+                    Thread.sleep(1000);
                 } 
                 catch (InterruptedException ex) {
                     Logger.getLogger(Company.class.getName()).log(Level.SEVERE, null, ex);
@@ -57,7 +57,7 @@ public class Company extends Agent{
                 
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
-                sd.setType(ontology.PROTOCOL_REGISTRATION);
+                sd.setType("Spacecraft");
                 dfd.addServices(sd);
                 DFAgentDescription[] results = new DFAgentDescription[20];
                 try {
