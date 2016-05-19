@@ -7,12 +7,18 @@ package es.upm.platform05;
 
 import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.XplorationOntology;
+import es.upm.ontology.Location;
+import es.upm.ontology.ReleaseCapsule;
+import jade.content.Concept;
 import jade.content.lang.Codec;
+import jade.content.lang.Codec.CodecException;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.Profile;
+import jade.core.ProfileImpl;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -20,23 +26,28 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.wrapper.AgentController;
+import jade.wrapper.ContainerController;
+import jade.wrapper.ControllerException;
+import jade.wrapper.StaleProxyException;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joda.time.DateTime;
+import jade.core.Runtime;
 /**
  *
  * @author Kop, Boshu, Vinu
  */
 public class Spacecraft extends Agent{
     
-    private static final long serialVersionUID =1L;
+     private static final long serialVersionUID =1L;
     public final static String REGISTRATION = "Registration";
     ACLMessage msg;
     XplorationOntology ontology = (XplorationOntology) XplorationOntology.getInstance();
     Codec codec = new SLCodec();
-    ArrayList<String> companyList = new ArrayList<>();
+    ArrayList<AID> companyList = new ArrayList<>();
     
     protected void setup(){
         System.out.println(getLocalName()+ " has entered into the system");
@@ -46,8 +57,7 @@ public class Spacecraft extends Agent{
         DFAgentDescription dfd = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setName(this.getName());
-        sd.setType("Spacecraft");
-
+        sd.setType(ontology.PROTOCOL_REGISTRATION);
         dfd.addServices(sd);
         
         try {
@@ -101,29 +111,26 @@ public class Spacecraft extends Agent{
 
                             if(companyList.contains(msg.getSender())){
                                 registration_reply.setPerformative(ACLMessage.FAILURE);
+
                                 System.out.println("Failed to register " + regRequest.getCompany() + ". Already registered.");
                             }
                             else{
                                 registration_reply.setPerformative(ACLMessage.INFORM);
-//                                the company should be added to the <companyList> for checking
-                                companyList.add(msg.getSender().getLocalName());
-                                System.out.println("Registered successfuly " + regRequest.getCompany());
-//                                for loop to check if the companies have been added into "companyList" array
-//                                for(int j=0; j < companyList.size(); j++) {
-//                                    System.out.println(companyList.get(j));
-//                                }
+
+                                System.out.println("Registered successfully  " + regRequest.getCompany());
                             }
                             send(registration_reply);
-                            // begins as02
-//                            release(msg.getSender());
-                            // ends as02
+                            
+                            //release the capsules
+                            release(msg.getSender());
+                          
 
                         } catch (Codec.CodecException e) {
                             e.printStackTrace();
                         } catch (OntologyException e) {
                             e.printStackTrace();
                         }
-                    }
+                  }
                 }
                 
                 else{
@@ -135,14 +142,13 @@ public class Spacecraft extends Agent{
 
     }
     
-    // as02
-    
     protected void release(AID receiver){
         
         Location location = new Location();
-        location.setX(new java.util.Random().nextInt());
-        location.setY(new java.util.Random().nextInt());
+        location.setX(new java.util.Random().nextInt(100));
+        location.setY(new java.util.Random().nextInt(100));
     	
+        //send a message to company
     	addBehaviour(new CyclicBehaviour(this)
 		{
 			 public void action() {
@@ -155,14 +161,19 @@ public class Spacecraft extends Agent{
 				 releaseCapsule.setLocation(location);
 				 try {
 					getContentManager().fillContent(msg, new Action(getAID(), releaseCapsule));
-					//System.out.println(myAgent.getLocalName() + " sending RELEASE CAPSULE to Spacecraft");
+					
+					System.out.println(myAgent.getLocalName() + " sending a message to release capsules"+ " "+msg.getContent().valueOf(releaseCapsule.getLocation().getX()));
+					doWait(500);
                     send(msg);
 				} catch (CodecException | OntologyException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				 finally{
+					 block(); 
+				 }
 			 }
 		});
+		
     }
     
 }
