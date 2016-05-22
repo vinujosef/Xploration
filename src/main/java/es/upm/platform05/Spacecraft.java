@@ -32,6 +32,7 @@ import jade.wrapper.ControllerException;
 import jade.wrapper.StaleProxyException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joda.time.DateTime;
@@ -48,6 +49,7 @@ public class Spacecraft extends Agent{
     XplorationOntology ontology = (XplorationOntology) XplorationOntology.getInstance();
     Codec codec = new SLCodec();
     ArrayList<AID> companyList = new ArrayList<>();
+    public final static HashMap<AID, Location> roversLocations = new HashMap<AID, Location>();
     
     protected void setup(){
         System.out.println(getLocalName()+ " has entered into the system");
@@ -147,7 +149,6 @@ public class Spacecraft extends Agent{
         Location location = new Location();
         location.setX(new java.util.Random().nextInt(100));
         location.setY(new java.util.Random().nextInt(100));
-    	
         //send a message to company
     	addBehaviour(new CyclicBehaviour(this)
 		{
@@ -161,6 +162,7 @@ public class Spacecraft extends Agent{
 				 releaseCapsule.setLocation(location);
 				 try {
 					getContentManager().fillContent(msg, new Action(getAID(), releaseCapsule));
+					
 					
 					System.out.println(myAgent.getLocalName() + " sending a message to release capsules"+ " "+msg.getContent().valueOf(releaseCapsule.getLocation().getX()));
 					doWait(500);

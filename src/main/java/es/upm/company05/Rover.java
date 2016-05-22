@@ -4,6 +4,7 @@ import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.ReleaseCapsule;
 import es.upm.ontology.RequestRoverMovement;
 import es.upm.ontology.XplorationOntology;
+import es.upm.platform05.Spacecraft;
 import es.upm.ontology.Direction;
 import es.upm.ontology.Location;
 import es.upm.ontology.*;
@@ -46,6 +47,7 @@ public class Rover extends Agent{
     Mineral mineral = new Mineral();
     MineralResult mr = new MineralResult();
     HashMap<Location, Mineral> analyzeResults = new HashMap<Location, Mineral>();
+    HashMap<AID, Location> roversLocations = Spacecraft.roversLocations;
     
 	protected void setup(){
 		System.out.println(getLocalName()+ " has entered into the system");
@@ -60,6 +62,8 @@ public class Rover extends Agent{
     			int y = (int) myAgent.getArguments()[1];
                 location.setX(x);
                 location.setY(y);
+                roversLocations.put(getAID(), location);
+				System.out.println(roversLocations);
         	}
         });
         
@@ -104,7 +108,7 @@ public class Rover extends Agent{
                             break;
                         }
 
-                        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                        ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
                         msg.setOntology(ontology.getName());
                         msg.setLanguage(codec.getName());
                         msg.addReceiver(results[i].getName());
@@ -128,6 +132,7 @@ public class Rover extends Agent{
 
         });
         // Cancel the movement
+        /*
         addBehaviour(new OneShotBehaviour(this){
         	
 
@@ -171,40 +176,8 @@ public class Rover extends Agent{
 			}
 
         });
-        
-        
-        
-        // Inform Rover the mineral result
- 
-        /*
-        BEHAVIOUR
-        Getting refusal performative if time exceeds and displaying the message
-        */        
-        /*addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.REFUSE));
-                if(msg == null) return;
-                else{
-                	if(msg.getProtocol() == ontology.PROTOCOL_ROVER_MOVEMENT){
-                		System.out.println(myAgent.getLocalName() + " got REFUSED from "+ (msg.getSender()).getLocalName());
-                		doWait(1500);
-                	}
-                	else{
-                		return;
-                	}
-                }
-                
-            }
-            
-            @Override
-            public boolean done() {
-                //once i added the false only, the refuse message got printed
-                return false;
-            }
-        });
         */
+   
         /*
         BEHAVIOUR: when receiving NOT UNDERSTOOD of move
         */ 
@@ -219,8 +192,9 @@ public class Rover extends Agent{
                 		System.out.println(myAgent.getLocalName() + " received an NOT UNDERSTOOD from "+ (msg.getSender()).getLocalName());
                 		doWait(1500);
                 	}
-                	else{
-                		return;
+                	else if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
+                		System.out.println(myAgent.getLocalName() + " received an NOT UNDERSTOOD from "+ (msg.getSender()).getLocalName());
+                		doWait(1500);
                 	}
                 }
                 
@@ -246,8 +220,9 @@ public class Rover extends Agent{
                 		System.out.println(myAgent.getLocalName() + " got REFUSED from "+ (msg.getSender()).getLocalName());
                 		doWait(1500);
                 	}
-                	else{
-                		return;
+                	else if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
+                		System.out.println(myAgent.getLocalName() + " got REFUSED from "+ (msg.getSender()).getLocalName());
+                		doWait(1500);
                 	}
                 }
                 
@@ -273,8 +248,9 @@ public class Rover extends Agent{
                 		System.out.println(myAgent.getLocalName() + " got AGREE from "+ (msg.getSender()).getLocalName());
                 		doWait(1500);
                 	}
-                	else{
-                		return;
+                	else if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
+                		System.out.println(myAgent.getLocalName() + " got AGREE from "+ (msg.getSender()).getLocalName());
+                		doWait(1500);
                 	}
                 }
               
@@ -325,10 +301,24 @@ public class Rover extends Agent{
                 else{
                 	if(msg.getProtocol() == ontology.PROTOCOL_ROVER_MOVEMENT){
                 		System.out.println(myAgent.getLocalName() + " received an INFORM from "+ (msg.getSender()).getLocalName());
+                		System.out.println("Start to analyze!!!");
+                		analyze(msg.getSender());
                 		doWait(1500);
                 	}
-                	else{
-                		return;
+                	else if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
+                		ContentElement ce;
+                		try {
+							ce = (Action) getContentManager().extractContent(msg);
+							mr = (MineralResult) ((Action)ce).getAction();
+							analyzeResults.put(location,mr.getMineral());
+	                		System.out.println(myAgent.getLocalName() + " received an MineralResult from "+ (msg.getSender()).getLocalName()+" "+mr.getMineral().getType());
+	                		doWait(1500);
+	                		
+						} catch (CodecException | OntologyException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
                 	}
                 }
       
@@ -340,7 +330,17 @@ public class Rover extends Agent{
             }
         });
         
-        //request analyze
+        
+        
+       
+        
+        
+	}
+	
+	
+	protected void analyze(AID receiver){
+        
+        //send a request to World to analyze
         addBehaviour(new SimpleBehaviour(this)
         {
             @Override
@@ -351,35 +351,17 @@ public class Rover extends Agent{
                 catch (InterruptedException ex) {
                     Logger.getLogger(Rover.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                
-                DFAgentDescription dfd = new DFAgentDescription();
-                ServiceDescription sd = new ServiceDescription();
-                sd.setType(ontology.PROTOCOL_ANALYZE_MINERAL);
-                dfd.addServices(sd);
-                DFAgentDescription[] results = new DFAgentDescription[20];
-                try {
-                    results = DFService.search(myAgent,dfd);
-//                    System.out.println("Found " + results.length);
-                    for(int i=0;i<results.length;i++){
-                        if(results[i]==null){
-                            break;
-                        }
 
-                    ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-                    msg.setOntology(ontology.getName());
-                    msg.setLanguage(codec.getName());
-                    msg.addReceiver(results[i].getName());
-                    msg.setProtocol(ontology.PROTOCOL_ANALYZE_MINERAL);
-                    
-                    System.out.println(myAgent.getLocalName() + " sending REQUEST to WORLD");
-                    send(msg);                        
-                   }
-                } 
-                catch (FIPAException ex) { 
-                    Logger.getLogger(Rover.class.getName()).log(Level.SEVERE, null, ex);
-                } 
-//                doWait(1000);                
-//                doWait(1000);
+                ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+				msg.setOntology(ontology.getName());
+				msg.setLanguage(codec.getName());
+				msg.addReceiver(receiver);
+				
+				msg.setProtocol(ontology.PROTOCOL_ANALYZE_MINERAL);
+				send(msg);
+				
+				System.out.println(myAgent.getLocalName() + " sending mineral REQUEST to WORLD");
+				
             }
 
             @Override
@@ -387,128 +369,8 @@ public class Rover extends Agent{
                 return true;
                 }       
         });
-        
-        /*
-        BEHAVIOUR: when receiving NOT UNDERSTOOD of analyze
-        */ 
-        addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.NOT_UNDERSTOOD));
-                if(msg == null) return;
-                else{
-                	if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
-                		System.out.println(myAgent.getLocalName() + " received an NOT UNDERSTOOD from "+ (msg.getSender()).getLocalName());
-                		doWait(1500);
-                	}
-                	else{
-                		return;
-                	}
-                }
-                
-            }
-
-            @Override
-            public boolean done() {
-                return false;
-            }
-        });
-        
-        /*
-        BEHAVIOUR: when receiving REFUSE of analyze
-        */ 
-        addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.REFUSE));
-                if(msg == null) return;
-                else{
-                	if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
-                		System.out.println(myAgent.getLocalName() + " got REFUSED from "+ (msg.getSender()).getLocalName());
-                		doWait(1500);
-                	}
-                	else{
-                		return;
-                	}
-                }
-                
-            }
-
-            @Override
-            public boolean done() {
-                return false;
-            }
-        });
-        
-        /*
-        BEHAVIOUR: when receiving AGREE of analyze
-        */ 
-        addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.AGREE));
-                if(msg == null) return;
-                else{
-                	if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
-                		System.out.println(myAgent.getLocalName() + " got AGREE from "+ (msg.getSender()).getLocalName());
-                		doWait(1500);
-                	}
-                	else{
-                		return;
-                	}
-                }
-              
-            }
-
-            @Override
-            public boolean done() {
-                return false;
-            }
-        });
-        
-        
-        /*
-        BEHAVIOUR: when receiving INFORM mineral
-        */ 
-        addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-                if(msg == null) return;
-                else{
-                	if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
-                		ContentElement ce;
-                		try {
-							ce = (Action) getContentManager().extractContent(msg);
-							mr = (MineralResult) ((Action)ce).getAction();
-							analyzeResults.put(location,mr.getMineral());
-	                		System.out.println(myAgent.getLocalName() + " received an MineralResult from "+ (msg.getSender()).getLocalName()+" "+mr.getMineral().getType());
-	                		doWait(1500);
-						} catch (CodecException | OntologyException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-                	}
-                	else{
-                		return;
-                	}
-                }
-                
-            }
-
-            @Override
-            public boolean done() {
-                return false;
-            }
-        });
-        
-	}
-	
+		
+    }
 	private void setX(int x){
 		direction.setX(x);
 	}
