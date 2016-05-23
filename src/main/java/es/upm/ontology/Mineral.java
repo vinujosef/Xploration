@@ -8,11 +8,12 @@ import jade.core.*;
 /**
 * Protege name: Mineral
 * @author ontology bean generator
-* @version 2016/05/11, 19:54:30
+* @version 2016/05/22, 14:32:56
 */
 public class Mineral implements Concept {
 
    /**
+   * The mineral result type of the cell.
 * Protege name: type
    */
    private String type;

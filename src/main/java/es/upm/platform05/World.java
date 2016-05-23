@@ -243,7 +243,7 @@ public class World extends Agent{
                             mineral.setType(type);
                             ACLMessage mineralResult_reply = msg.createReply();
                             MineralResult mineralResult = new MineralResult();
-                            mineralResult.setMineraL(mineral);
+                            mineralResult.setMineral(mineral);
                             mineralResult_reply.setPerformative(ACLMessage.INFORM);
                             try {
             					getContentManager().fillContent(mineralResult_reply, new Action(getAID(), mineralResult));
