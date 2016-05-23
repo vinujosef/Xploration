@@ -32,48 +32,52 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Capsule extends Agent {
-	
+
 	private static final long serialVersionUID =1L;
-    XplorationOntology ontology = (XplorationOntology) XplorationOntology.getInstance();
-    Codec codec = new SLCodec();
-	
+	XplorationOntology ontology = (XplorationOntology) XplorationOntology.getInstance();
+	Codec codec = new SLCodec();
+
 	protected void setup(){
 		System.out.println(getLocalName()+ " has entered into the system");
-        getContentManager().registerOntology(ontology);
-        getContentManager().registerLanguage(codec);
-        
-        // release rovers
-        addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                try {
-                	System.out.println(myAgent.getLocalName() + " is releasing a rover.");
-					releaseRover();
-				} catch (ControllerException e) {
+		getContentManager().registerOntology(ontology);
+		getContentManager().registerLanguage(codec);
+
+		ReleaseCapsule rc = new ReleaseCapsule();
+
+		// Release Rovers
+		addBehaviour(new SimpleBehaviour(this)
+		{
+			@Override
+			public void action() {
+				try {
+					releaseRover(myAgent.getArguments()[0],myAgent.getArguments()[1]);
+					System.out.println(myAgent.getLocalName() + " is releasing a rover at "+ myAgent.getArguments()[0] +", " + myAgent.getArguments()[1]);
+				}
+
+				catch (ControllerException e) {
 					e.printStackTrace();
 				}
-                finally{
-                	block();
-                }
-            }
+				finally{
+					block();
+				}
+			}
 
-            @Override
-            public boolean done() {
-                return false;
-            }
-        });      
+			@Override
+			public boolean done() {
+				return false;
+			}
+		});
 	}
-	
 
-	protected void releaseRover() throws ControllerException{
-		Runtime rt = Runtime.instance();
-		Profile profile = new ProfileImpl(null, 1200, null);
-		ContainerController cc = rt.createAgentContainer(profile);
-		Object obj = new Object();
-		Object agentObj[] = new Object[1];
-		agentObj[0] = obj;
-		AgentController ac = cc.createNewAgent("Rover", "es.upm.company05.Rover", agentObj);
+
+	protected void releaseRover(Object x, Object y) throws ControllerException{
+
+		ContainerController cc = getContainerController();
+
+		Object agentObj[] = new Object[2];
+		agentObj[0] = x;
+		agentObj[1] = y;
+		AgentController ac = cc.createNewAgent("Rover05", "es.upm.company05.Rover", agentObj);
 		ac.start();
 	}
 
