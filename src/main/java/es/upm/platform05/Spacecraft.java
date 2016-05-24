@@ -123,7 +123,10 @@ public class Spacecraft extends Agent{
                                 registration_reply.setPerformative(ACLMessage.INFORM);
                                 companyList.add(msg.getSender().getLocalName());
                                 System.out.println("Registered successfully " + (msg.getSender()).getLocalName());
-//                                System.out.println("Registered successfully  " + regRequest.getCompany());
+//                                for loop to check the list of companies added into the companylist array
+                                for(int j=0; j < companyList.size(); j++) {
+                                    System.out.println(companyList.get(j));
+                                }
                             }
                             send(registration_reply);
 

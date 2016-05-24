@@ -1,10 +1,11 @@
 
 group 'xploration-company05'
-version '0.0.2'
+version '0.0.2-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'maven'
+apply plugin: 'application'
 
 uploadArchives {
     repositories {
@@ -33,7 +34,12 @@ repositories {
 
 dependencies {
     compile 'com.tilab.jade:jade:4.4.0'
-    compile 'com.github.kradalby:xploration-shared:0.0.8'
+    compile 'com.github.kradalby:xploration-shared:0.0.15'
     compile 'joda-time:joda-time:2.9.3'
 
+}
+
+configurations.archives.with {
+    artifacts.remove artifacts.find { it.archiveTask.is distZip }
+    artifacts.remove artifacts.find { it.archiveTask.is distTar }
 }
