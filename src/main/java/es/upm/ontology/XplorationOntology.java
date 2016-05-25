@@ -9,7 +9,7 @@ import jade.core.CaseInsensitiveString;
 
 /** file: XplorationOntology.java
  * @author ontology bean generator
- * @version 2016/05/22, 14:32:56
+ * @version 2016/05/24, 21:16:03
  */
 public class XplorationOntology extends jade.content.onto.Ontology  {
   //NAME
@@ -31,9 +31,13 @@ public class XplorationOntology extends jade.content.onto.Ontology  {
     public static final String REGISTRATIONREQUEST="RegistrationRequest";
     public static final String RELEASECAPSULE_LOCATION="location";
     public static final String RELEASECAPSULE="ReleaseCapsule";
-    public static final String MOVEINFORMATION_MOVEDIRECTION="MoveDirection";
-    public static final String MOVEINFORMATION_ROVERLOCATION="RoverLocation";
+    public static final String MOVEINFORMATION_DIRECTION="direction";
+    public static final String MOVEINFORMATION_LOCATION="location";
+    public static final String MOVEINFORMATION_ROVER="rover";
     public static final String MOVEINFORMATION="MoveInformation";
+    public static final String REGISTERAGENTS_CAPSULE="capsule";
+    public static final String REGISTERAGENTS_ROVER="rover";
+    public static final String REGISTERAGENTS="RegisterAgents";
     public static final String PROTOCOL_RELEASE_CAPSULE="PROTOCOL_RELEASE_CAPSULE";
     public static final String PROTOCOL_ROVER_MOVEMENT="PROTOCOL_ROVER_MOVEMENT";
     public static final String DIRECTION_X="x";
@@ -93,6 +97,8 @@ public class XplorationOntology extends jade.content.onto.Ontology  {
     add(protocoL_releasE_capsuleSchema, es.upm.ontology.PROTOCOL_RELEASE_CAPSULE.class);
 
     // adding AgentAction(s)
+    AgentActionSchema registerAgentsSchema = new AgentActionSchema(REGISTERAGENTS);
+    add(registerAgentsSchema, es.upm.ontology.RegisterAgents.class);
     AgentActionSchema moveInformationSchema = new AgentActionSchema(MOVEINFORMATION);
     add(moveInformationSchema, es.upm.ontology.MoveInformation.class);
     AgentActionSchema releaseCapsuleSchema = new AgentActionSchema(RELEASECAPSULE);
@@ -114,17 +120,20 @@ public class XplorationOntology extends jade.content.onto.Ontology  {
     locationSchema.add(LOCATION_X, (TermSchema)getSchema(BasicOntology.INTEGER), ObjectSchema.OPTIONAL);
     companySchema.add(COMPANY_COMPANY_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.OPTIONAL);
     companySchema.add(COMPANY_NAME, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
-    companySchema.add(COMPANY_CAPSULE, capsuleSchema, ObjectSchema.OPTIONAL);
-    capsuleSchema.add(CAPSULE_ROVER, roverSchema, ObjectSchema.OPTIONAL);
+    companySchema.add(COMPANY_CAPSULE, capsuleSchema, ObjectSchema.MANDATORY);
+    capsuleSchema.add(CAPSULE_ROVER, roverSchema, ObjectSchema.MANDATORY);
     capsuleSchema.add(CAPSULE_NAME, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     capsuleSchema.add(CAPSULE_CAPSULE_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.OPTIONAL);
     roverSchema.add(ROVER_NAME, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     roverSchema.add(ROVER_ROVER_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.OPTIONAL);
     mineralSchema.add(MINERAL_TYPE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
     directionSchema.add(DIRECTION_X, (TermSchema)getSchema(BasicOntology.INTEGER), ObjectSchema.MANDATORY);
-    moveInformationSchema.add(MOVEINFORMATION_ROVERLOCATION, locationSchema, ObjectSchema.MANDATORY);
-    moveInformationSchema.add(MOVEINFORMATION_MOVEDIRECTION, directionSchema, ObjectSchema.MANDATORY);
-    releaseCapsuleSchema.add(RELEASECAPSULE_LOCATION, locationSchema, ObjectSchema.OPTIONAL);
+    registerAgentsSchema.add(REGISTERAGENTS_ROVER, roverSchema, ObjectSchema.MANDATORY);
+    registerAgentsSchema.add(REGISTERAGENTS_CAPSULE, capsuleSchema, ObjectSchema.MANDATORY);
+    moveInformationSchema.add(MOVEINFORMATION_ROVER, roverSchema, ObjectSchema.MANDATORY);
+    moveInformationSchema.add(MOVEINFORMATION_LOCATION, locationSchema, ObjectSchema.MANDATORY);
+    moveInformationSchema.add(MOVEINFORMATION_DIRECTION, directionSchema, ObjectSchema.MANDATORY);
+    releaseCapsuleSchema.add(RELEASECAPSULE_LOCATION, locationSchema, ObjectSchema.MANDATORY);
     registrationRequestSchema.add(REGISTRATIONREQUEST_COMPANY, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
     requestRoverMovementSchema.add(REQUESTROVERMOVEMENT_DIRECTION, directionSchema, ObjectSchema.MANDATORY);
     mineralResultSchema.add(MINERALRESULT_MINERAL, mineralSchema, ObjectSchema.OPTIONAL);

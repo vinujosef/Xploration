@@ -1,0 +1,11 @@
+10	10
+A	null	A	null	D	null	A	null	B	null
+null	A	null	B	null	D	null	E	null	B
+A	null	A	null	B	null	E	null	B	null
+null	A	null	B	null	B	null	E	null	D
+A	null	B	null	B	null	E	null	A	null
+null	A	null	B	null	B	null	E	null	A
+A	null	C	null	D	null	A	null	D	null
+null	C	null	C	null	A	null	C	null	C
+B	null	E	null	C	null	A	null	C	null
+null	C	null	C	null	E	null	C	null	B
