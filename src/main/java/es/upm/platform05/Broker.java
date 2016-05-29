@@ -86,11 +86,13 @@ public class Broker extends Agent{
                             if(roversWhereabout.contains(msg.getSender())){
                             	roversWhereabout.remove(msg.getSender());
                             	roversWhereabout.add(mi);
+                            	System.out.println("done");
                             	
                             }
                             else{
                             	
                             	roversWhereabout.add(mi);
+                            	System.out.println("done");
                             	
                             }
                             //change to: check if any rover in range, and should create a new Behavior!!!!!!

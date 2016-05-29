@@ -6,11 +6,22 @@ import jade.util.leap.*;
 import jade.core.*;
 
 /**
-* Protege name: MineralResult
+* Protege name: Finding
 * @author ontology bean generator
 * @version 2016/05/26, 14:02:25
 */
-public class MineralResult implements AgentAction {
+public class Finding implements Concept {
+
+   /**
+* Protege name: location
+   */
+   private Location location;
+   public void setLocation(Location value) { 
+    this.location=value;
+   }
+   public Location getLocation() {
+     return this.location;
+   }
 
    /**
    * The mineral result of cell.

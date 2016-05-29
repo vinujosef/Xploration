@@ -273,9 +273,14 @@ public class Rover extends Agent{
                 			Thread.sleep(1000);
                 			move();
                 			
-                		} catch (CodecException | OntologyException | InterruptedException e) {
+                			
+                			
+                		} catch (CodecException | OntologyException e) {
                 			e.printStackTrace();
-                		}
+                		} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
                 	}
                     
 
@@ -379,13 +384,7 @@ public class Rover extends Agent{
 
 			@Override
 			public void action() {
-				try {
-                    Thread.sleep(700);
-                }
-                catch (InterruptedException ex) {
-                    Logger.getLogger(Rover.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
+				
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
                 sd.setType(ontology.PROTOCOL_ROVER_MOVEMENT);

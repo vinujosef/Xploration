@@ -19,6 +19,7 @@ import jade.core.Agent;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.core.Runtime;
 import jade.domain.DFService;
@@ -85,7 +86,7 @@ public class World extends Agent{
 
 		// Let say this is the time it takes for a rover to move
 		DateTime movetime = DateTime.now().plusSeconds(5);
-
+		
 		addBehaviour(new CyclicBehaviour(this){
 
 			@Override
@@ -119,59 +120,16 @@ public class World extends Agent{
 	                                /*
 	                                 * TODO Set locations
 	                                 */
-	                                doWait(5000);		
-									doWake();
+	                                
 								} catch (Codec.CodecException e) {
 									e.printStackTrace();
 								} catch (OntologyException e) {
 									e.printStackTrace();
 								} 
-								boolean failure = false;
-
-								for(AID aid: roversLocations.keySet()){
-									if(msg.getSender().equals(aid)){
-										continue;
-									}
-									else{
-										// when the rover has the same location as another rover = crash
-										if(roversLocations.get(aid).equals(roversLocations.get(msg.getSender()))){
-											//remove those rovers off
-											roversLocations.remove(aid);
-											roversLocations.remove(msg.getSender());
-											roversDirections.remove(aid);
-											roversDirections.remove(msg.getSender());
-
-											failure = true;
-											break;
-										}
-									}
-								}
-								ACLMessage reply2 = msg.createReply();
-								if(failure){
-									reply2.setPerformative(ACLMessage.FAILURE);
-									myAgent.send(reply2);
-									System.out.println(myAgent.getLocalName() + " sent an FAILURE to " + (msg.getSender()).getLocalName());
-								}
-								else{
-									// when there's no crash
-									
-									if(roversDirections.containsKey(msg.getSender())){
-										reply2.setPerformative(ACLMessage.INFORM);
-										myAgent.send(reply2);
-										System.out.println(myAgent.getLocalName() + " sent an INFORM of achieve to " + (msg.getSender()).getLocalName());
-										roversDirections.remove(msg.getSender());
-			                    		/*
-			                    		 * TODO calculate new location
-			                    		 */
-									}
-									else{
-										System.out.println(myAgent.getLocalName() + " got a cancel from " + (msg.getSender()).getLocalName());
-									}
-									//remove directions after finishing moving
-
-								}
-
-								block();
+								doWait(5000);		
+								
+								FoI(msg);
+							
 							}
 						}
 						else{
@@ -188,51 +146,17 @@ public class World extends Agent{
                                 /*
                                  * TODO Set locations
                                  */
-								doWait(5000);		
-								
+                                doWait(5000);		
 								doWake();
 							} catch (Codec.CodecException e) {
 								e.printStackTrace();
 							} catch (OntologyException e) {
 								e.printStackTrace();
-							} 
-
-							boolean failure = false;
-
-							for(AID aid: roversLocations.keySet()){
-								if(msg.getSender().equals(aid)){
-									continue;
-								}
-								else{
-									// when the rover has the same location as another rover = crash
-									if(roversLocations.get(aid).equals(roversLocations.get(msg.getSender()))){
-										//remove those rovers off
-										roversLocations.remove(aid);
-										roversLocations.remove(msg.getSender());
-										roversDirections.remove(aid);
-										roversDirections.remove(msg.getSender());
-
-										failure = true;
-										break;
-									}
-								}
 							}
-							ACLMessage reply2 = msg.createReply();
-							if(failure){
-								//when crashed, send another reply
-								reply2.setPerformative(ACLMessage.FAILURE);
-								myAgent.send(reply2);
-								System.out.println(myAgent.getLocalName() + " sent an FAILURE to " + (msg.getSender()).getLocalName());
-							}
-							else{
-								// when there's no crash
-								reply2.setPerformative(ACLMessage.INFORM);
-								myAgent.send(reply2);
-								System.out.println(myAgent.getLocalName() + " sent an INFORM to " + (msg.getSender()).getLocalName());
+							FoI(msg);
+				
+							
 
-								//remove directions after finishing moving
-								roversDirections.remove(msg.getSender());
-							}
 						}
 					}
 					else if(msg.getProtocol().equals(ontology.PROTOCOL_ANALYZE_MINERAL)){
@@ -245,7 +169,7 @@ public class World extends Agent{
 							mineral_reply.setPerformative(ACLMessage.AGREE);
 							myAgent.send(mineral_reply);
 							System.out.println(myAgent.getLocalName() + " sent a AGREE to " + (msg.getSender()).getLocalName());
-							doWait(500);
+							
 							//and then send the mineral result inform
 							int t = new java.util.Random().nextInt(6 - 1 ) + 'A';
 							char ty = (char)t;
@@ -259,7 +183,7 @@ public class World extends Agent{
 								getContentManager().fillContent(mineralResult_reply, new Action(getAID(), mineralResult));
 								mineralResults.put(msg.getSender(), mineral);
 								System.out.println(myAgent.getLocalName() + " sending a mineral Result "+ type + " to "+msg.getSender().getLocalName());
-								doWait(500);
+								
 								send(mineralResult_reply);
 							} catch (CodecException | OntologyException e) {
 								e.printStackTrace();
@@ -276,7 +200,7 @@ public class World extends Agent{
 							mineral_reply.setPerformative(ACLMessage.REFUSE);
 							myAgent.send(mineral_reply);
 							System.out.println(myAgent.getLocalName() + " sent a REFUSE to " + (msg.getSender()).getLocalName());
-							doWait(500);
+							
 						}
 					}
 
@@ -307,9 +231,8 @@ public class World extends Agent{
 				else{
 					if(msg.getProtocol() == ontology.PROTOCOL_ROVER_MOVEMENT){
 						roversDirections.remove(msg.getSender());
-
 						System.out.println(myAgent.getLocalName() + " romove movement of "+ (msg.getSender()).getLocalName());
-						doWake();
+												
 					}
 					else{
 						return;
@@ -358,7 +281,60 @@ public class World extends Agent{
 		
 		return map;
 	}
+	
+	//Behavior failure or inform
+    private void FoI(ACLMessage msg){
+    	addBehaviour(new OneShotBehaviour(this){
 
+			@Override
+			public void action() {				
+				boolean failure = false;
+				for(AID aid: roversLocations.keySet()){
+					if(msg.getSender().equals(aid)){
+						continue;
+					}
+					else{
+						// when the rover has the same location as another rover = crash
+						if(roversLocations.get(aid).equals(roversLocations.get(msg.getSender()))){
+							//remove those rovers off
+							roversLocations.remove(aid);
+							roversLocations.remove(msg.getSender());
+							roversDirections.remove(aid);
+							roversDirections.remove(msg.getSender());
+
+							failure = true;
+							break;
+						}
+					}
+				}
+				ACLMessage reply2 = msg.createReply();
+				if(failure){
+					reply2.setPerformative(ACLMessage.FAILURE);
+					myAgent.send(reply2);
+					System.out.println(myAgent.getLocalName() + " sent an FAILURE to " + (msg.getSender()).getLocalName());
+				}
+				else{
+					// when there's no crash
+					
+					if(roversDirections.containsKey(msg.getSender())){
+						reply2.setPerformative(ACLMessage.INFORM);
+						myAgent.send(reply2);
+						System.out.println(myAgent.getLocalName() + " sent an INFORM of achieve2 to " + (msg.getSender()).getLocalName());
+						roversDirections.remove(msg.getSender());
+                		/*
+                		 * TODO calculate new location
+                		 */
+					}
+					else{
+						System.out.println(myAgent.getLocalName() + " got a Cancel from " + (msg.getSender()).getLocalName());
+					}
+					//remove directions after finishing moving
+					
+				}
+			}
+        });
+    }
+	
 	protected void setLocation(AID aid, Location location){
 		//TODO set the locations
 	}

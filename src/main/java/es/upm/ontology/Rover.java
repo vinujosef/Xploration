@@ -8,7 +8,7 @@ import jade.core.*;
 /**
 * Protege name: Rover
 * @author ontology bean generator
-* @version 2016/05/24, 21:16:03
+* @version 2016/05/26, 14:02:25
 */
 public class Rover implements Concept {
 
