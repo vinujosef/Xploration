@@ -202,7 +202,12 @@ public class Rover extends Agent{
                 else{
                     if(msg.getProtocol() == ontology.PROTOCOL_ROVER_MOVEMENT){
                         System.out.println(myAgent.getLocalName() + " received an FAILURE from "+ (msg.getSender()).getLocalName());
-                        doWait(1500);
+                        try {
+							Thread.sleep(100000000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
                     }
                     else{
                         return;
@@ -327,7 +332,7 @@ public class Rover extends Agent{
                         RequestRoverMovement rrm = new RequestRoverMovement();
                         rrm.setDirection(direction);
                         getContentManager().fillContent(msg2, new Action(getAID(), rrm));
-                        System.out.println(myAgent.getLocalName() + " sending direction to World");
+                        System.out.println(myAgent.getLocalName() + " sending direction" + direction.getX() +" to World");
                         send(msg2);
                         /* Iteration 5
                          * SENDING an inform Message Broker when moving

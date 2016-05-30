@@ -36,6 +36,8 @@ import jade.wrapper.StaleProxyException;
 import jade.core.AID;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -56,6 +58,8 @@ public class World extends Agent{
 	HashMap<AID, Location> roversLocations = Spacecraft.roversLocations;
 	HashMap<AID, Mineral> mineralResults = new HashMap<AID, Mineral>();
 	String[][] map;
+	
+	
 
 	protected void setup(){
 		System.out.println(getLocalName()+ " has entered into the system");
@@ -171,9 +175,15 @@ public class World extends Agent{
 							System.out.println(myAgent.getLocalName() + " sent a AGREE to " + (msg.getSender()).getLocalName());
 							
 							//and then send the mineral result inform
+							int xM = roversLocations.get(msg.getSender()).getX();
+							int yM = roversLocations.get(msg.getSender()).getY();
+							/*
 							int t = new java.util.Random().nextInt(6 - 1 ) + 'A';
 							char ty = (char)t;
+							
 							String type = String.valueOf(ty);
+							*/
+							String type = map[xM][yM];
 							mineral.setType(type);
 							ACLMessage mineralResult_reply = msg.createReply();
 							MineralResult mineralResult = new MineralResult();
@@ -251,43 +261,56 @@ public class World extends Agent{
 
 	}
 	
+	
+	//readmap
 	protected String[][] readMap() throws Exception{
 		
 		String[][] map = null;
-		InputStream is = ClassLoader.getSystemResourceAsStream("map.txt");
-		BufferedReader br = new BufferedReader(new InputStreamReader(is));
-		String line;
-		int row = 0;
-		
-		while((line = br.readLine()) != null){
-			String[] texts = line.split("\t");
-			if(map == null){
-				try{
-					int x = Integer.parseInt(texts[0]);
-					int y = Integer.parseInt(texts[1]);
-					map = new String[x][y];
+		BufferedReader reader = new BufferedReader(new FileReader("/Users/mb15/Desktop/abs-project/9.0/test/src/es/upm/map/map.txt"));  
+	       //System.out.println(reader.readLine());
+	       String line;
+	       int row = 0;
+			
+			
+			try {
+				while((line = reader.readLine()) != null){
+					String[] texts = line.split("\t");
+					if(map == null){
+						try{
+							int x = Integer.parseInt(texts[0]);
+							int y = Integer.parseInt(texts[1]);
+							map = new String[x+1][y+1];
+						}
+						catch(NumberFormatException e){
+							e.printStackTrace();
+						}
+					}
+					else{
+						for(int i=0; i<texts.length; i++){
+							map[row+1][i+1] = texts[i];
+						}
+						row++;
+					}
 				}
-				catch(NumberFormatException e){
-					e.printStackTrace();
-				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			else{
-				for(int i=0; i<texts.length; i++){
-					map[row][i] = texts[i];
-				}
-				row++;
-			}
-		}
+			
 		
 		return map;
 	}
 	
+	
+	
 	//Behavior failure or inform
     private void FoI(ACLMessage msg){
+    	
     	addBehaviour(new OneShotBehaviour(this){
-
+    		
 			@Override
-			public void action() {				
+			public void action() {		
+				Location NewLoc = new Location();
 				boolean failure = false;
 				for(AID aid: roversLocations.keySet()){
 					if(msg.getSender().equals(aid)){
@@ -314,12 +337,16 @@ public class World extends Agent{
 					System.out.println(myAgent.getLocalName() + " sent an FAILURE to " + (msg.getSender()).getLocalName());
 				}
 				else{
-					// when there's no crash
+					// when there's no crash, Calculate the new location, and delete the old (location & direction)
 					
 					if(roversDirections.containsKey(msg.getSender())){
 						reply2.setPerformative(ACLMessage.INFORM);
 						myAgent.send(reply2);
 						System.out.println(myAgent.getLocalName() + " sent an INFORM of achieve2 to " + (msg.getSender()).getLocalName());
+						
+						NewLoc = CaculateLocation(roversLocations.get(msg.getSender()), roversDirections.get(msg.getSender()));
+						roversLocations.remove(msg.getSender());
+						roversLocations.put(msg.getSender(), NewLoc);
 						roversDirections.remove(msg.getSender());
                 		/*
                 		 * TODO calculate new location
@@ -334,6 +361,37 @@ public class World extends Agent{
 			}
         });
     }
+    //CaculateLocation
+  	protected Location CaculateLocation(Location loc, Direction dir){
+  		int x = loc.getX();
+  		int y = loc.getY();
+  		int d = dir.getX();
+  		Location newLoc = new Location();
+  		switch(d){
+  		case 1: x = x - 2; break;
+  		case 2: x = x - 1 ; y = y + 1; break;
+  		case 3: x = x + 1 ; y = y + 1; break;
+  		case 4: x = x + 2; break;
+  		case 5: x = x + 1 ; y = y - 1; break;
+  		case 6: x = x - 1 ; y = y - 1; break;
+  		}
+  		switch(x){
+  		case -1: x = 9; break;
+  		case 0: x = 10; break;
+  		case 11: x = 1; break;
+  		case 12: x = 2; break;
+  		}
+  		switch(y){
+  		case -1: y = 9; break;
+  		case 0: y = 10; break;
+  		case 11: y = 1; break;
+  		case 12: y = 2; break;
+  		}
+  		newLoc.setX(x);
+  		newLoc.setY(y);
+  		return newLoc;
+  		
+  	}
 	
 	protected void setLocation(AID aid, Location location){
 		//TODO set the locations
@@ -352,5 +410,7 @@ public class World extends Agent{
 			return null;
 		}
 	}
+	
+	
 
 }

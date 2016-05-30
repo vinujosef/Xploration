@@ -154,8 +154,18 @@ public class Spacecraft extends Agent{
     protected void release(AID receiver){
 
         Location location = new Location();
-        location.setX(new java.util.Random().nextInt(20));
-        location.setY(new java.util.Random().nextInt(20));
+        int x=new java.util.Random().nextInt(10)+1;
+        int y;
+        if(x%2==0)
+        {
+        	y = new java.util.Random().nextInt(4)*2 + 2;
+        }
+        else
+        {
+        	y = new java.util.Random().nextInt(4)*2 + 1;
+        }
+        location.setX(x);
+        location.setY(y);
 
         //send a message to company
         addBehaviour(new CyclicBehaviour(this)
@@ -169,6 +179,7 @@ public class Spacecraft extends Agent{
                 msg.setProtocol(ontology.PROTOCOL_RELEASE_CAPSULE);
                 ReleaseCapsule releaseCapsule = new ReleaseCapsule();
                 releaseCapsule.setLocation(location);
+                roversLocations.put(receiver, location);
                 try {
                     getContentManager().fillContent(msg, new Action(getAID(), releaseCapsule));
                     System.out.println(myAgent.getLocalName() + " sending a message to release capsules");
