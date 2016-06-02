@@ -47,6 +47,9 @@ public class Rover extends Agent{
     Direction direction = new Direction();
     Mineral mineral = new Mineral();
     MineralResult mr = new MineralResult();
+    Finding finding = new Finding();
+    Findings findings = new Findings();
+    Frequency frequency = new Frequency();
     es.upm.ontology.Rover rover05 = new es.upm.ontology.Rover();
     HashMap<Location, Mineral> analyzeResults = new HashMap<Location, Mineral>();
     HashMap<AID, Location> roversLocations = Spacecraft.roversLocations;
@@ -67,12 +70,13 @@ public class Rover extends Agent{
                 roversLocations.put(getAID(), location);
                 rover05.setName(getAID().getName());
                 rover05.setRover_agent(getAID());
+                frequency.setChannel(5);
                 System.out.println("-------------------------------------");
             }
         });
 
 
-        // Inform World to move
+        // Inform World FIRST analyze and to move 
         addBehaviour(new SimpleBehaviour(this){
 
 
@@ -84,6 +88,8 @@ public class Rover extends Agent{
                 catch (InterruptedException ex) {
                     Logger.getLogger(Rover.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                
+                
                 move();
                 
             }
@@ -247,7 +253,8 @@ public class Rover extends Agent{
                         
                         System.out.println(myAgent.getLocalName() + " sending mineral REQUEST to WORLD");
                         //wait until analyze finished, line 220 wake agent up first time
-                        doWait();                      
+                        doWait();   
+                        
                         move();                       
                     }
                     else if(msg.getProtocol() == ontology.PROTOCOL_ANALYZE_MINERAL){
@@ -255,9 +262,66 @@ public class Rover extends Agent{
                         try {
                             ce = (Action) getContentManager().extractContent(msg);
                             mr = (MineralResult) ((Action)ce).getAction();
-                            analyzeResults.put(location,mr.getMineral());
+                            finding.setLocation(location);
+                            finding.setMineral(mr.getMineral());
+                            findings.addFinding(finding);
+                            //AskforUpdate(findings);
+                            DFAgentDescription dfd = new DFAgentDescription();
+                            ServiceDescription sd = new ServiceDescription();
+                            sd.setType(ontology.PROTOCOL_SEND_FINDINGS);
+                            dfd.addServices(sd);
+                            DFAgentDescription[] results = new DFAgentDescription[20];
+                            try {
+            					results = DFService.search(myAgent,dfd);
+            					for(int i=0;i<results.length;i++){
+            	                    if(results[i]==null){
+            	                        break;
+            	                    }
+            	                    else if(results[i].getName().getLocalName().equals("Broker")){
+            	                    	ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
+                	                    
+                	                    msg2.setOntology(ontology.getName());
+                	                    msg2.setLanguage(codec.getName());
+                	                    msg2.addReceiver(results[i].getName());
+                	                    msg2.setProtocol(ontology.PROTOCOL_SEND_FINDINGS);
+                	                    FindingsMessage fm = new FindingsMessage();
+                                        fm.setFindings(findings);
+                                        fm.setFrequency(frequency);;
+                                        getContentManager().fillContent(msg2, new Action(getAID(), fm));
+                	                    send(msg2);
+                	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
+                	                    
+            	                    }
+                                
+            	                    
+            					}
+
+
+
+            				} catch (FIPAException e) {
+            					// TODO Auto-generated catch block
+            					e.printStackTrace();
+            				} catch (CodecException e) {
+            					// TODO Auto-generated catch block
+            					e.printStackTrace();
+            				} catch (OntologyException e) {
+            					// TODO Auto-generated catch block
+            					e.printStackTrace();
+            				}
                             System.out.println(myAgent.getLocalName() + " received an MineralResult from "+ (msg.getSender()).getLocalName()+" "+mr.getMineral().getType());
+                            
+                            analyzeResults.put(location,mr.getMineral());
+                            
+                            //After all the work, have a rest for 1 s
+                            try {
+    							Thread.sleep(1000);
+    						} catch (InterruptedException e) {
+    							// TODO Auto-generated catch block
+    							e.printStackTrace();
+    						}
+                            
                             System.out.println("-------------------------------------");
+                            
                             //back to line 286 move() again
                             doWake();
 
@@ -273,10 +337,16 @@ public class Rover extends Agent{
                 			ce = (Action) getContentManager().extractContent(msg);
                 			MoveInformation mi = (MoveInformation) ((Action)ce).getAction();
                 			System.out.println(myAgent.getLocalName() + " received an INFORM from "+ (msg.getSender()).getLocalName() + ". There is a rover at location (" + mi.getLocation().getX() + ", " + mi.getLocation().getY() + "), and moving towards direction " + mi.getDirection().getX());
+                			
                 			//Calculate if they can crash of not
-                			cancel();
-                			Thread.sleep(1000);
-                			move();
+                			if(CrashDetect(location,direction,mi)){
+                			
+                				cancel();
+                				Thread.sleep(1000);
+                				move();
+                			}
+                			else System.out.println((msg.getSender()).getLocalName() + " working well with Rover05");
+                			
                 			
                 			
                 			
@@ -302,7 +372,7 @@ public class Rover extends Agent{
     }
 
 
-    
+    //Movement activity 
     private void move(){
     	addBehaviour(new SimpleBehaviour(this)
     	{
@@ -383,6 +453,7 @@ public class Rover extends Agent{
     		
     	});
     }
+    
     //Behavior cancel
     private void cancel(){
     	addBehaviour(new OneShotBehaviour(this){
@@ -420,6 +491,118 @@ public class Rover extends Agent{
 			}
         });
     }
+    
+    //Calculate the new location
+    protected Location CaculateLocation(Location loc, Direction dir){
+  		int x = loc.getX();
+  		int y = loc.getY();
+  		int d = dir.getX();
+  		Location newLoc = new Location();
+  		switch(d){
+  		case 1: x = x - 2; break;
+  		case 2: x = x - 1 ; y = y + 1; break;
+  		case 3: x = x + 1 ; y = y + 1; break;
+  		case 4: x = x + 2; break;
+  		case 5: x = x + 1 ; y = y - 1; break;
+  		case 6: x = x - 1 ; y = y - 1; break;
+  		}
+  		switch(x){
+  		case -1: x = 9; break;
+  		case 0: x = 10; break;
+  		case 11: x = 1; break;
+  		case 12: x = 2; break;
+  		}
+  		switch(y){
+  		case -1: y = 9; break;
+  		case 0: y = 10; break;
+  		case 11: y = 1; break;
+  		case 12: y = 2; break;
+  		}
+  		newLoc.setX(x);
+  		newLoc.setY(y);
+  		return newLoc;
+  		
+  	}
+    
+    
+    //Detect can crash or not
+    protected boolean CrashDetect(Location loc, Direction dir, MoveInformation mi){
+    	/*
+  		int x1 = loc.getX();
+  		int y1 = loc.getY();
+  		int d1 = dir.getX();
+  		int x2 = mi.getLocation().getX();
+  		int y2 = mi.getLocation().getY();
+  		int d2 = mi.getDirection().getX();
+  		*/
+  		Location l1 = new Location();
+  		Location l2 = new Location();
+  		l1 = CaculateLocation(loc, dir);
+  		l2 = CaculateLocation(mi.getLocation(), mi.getDirection());
+  		if(l1.getX() == l2.getX() && l1.getY() == l2.getY()) return true;
+  		else return false;
+  		
+  	}
+    
+    //Behavior Update findingS
+    protected void AskforUpdate(Findings fi){
+    	
+    	addBehaviour(new SimpleBehaviour(this){
+
+			@Override
+			public void action() {
+				
+                DFAgentDescription dfd = new DFAgentDescription();
+                ServiceDescription sd = new ServiceDescription();
+                sd.setType(ontology.PROTOCOL_SEND_FINDINGS);
+                dfd.addServices(sd);
+                DFAgentDescription[] results = new DFAgentDescription[20];
+                try {
+					results = DFService.search(myAgent,dfd);
+					for(int i=0;i<results.length;i++){
+	                    if(results[i]==null){
+	                        break;
+	                    }
+	                    
+	                    ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
+	                    
+	                    msg.setOntology(ontology.getName());
+	                    msg.setLanguage(codec.getName());
+	                    msg.addReceiver(results[i].getName());
+	                    msg.setProtocol(ontology.PROTOCOL_SEND_FINDINGS);
+	                    FindingsMessage fm = new FindingsMessage();
+                        fm.setFindings(fi);
+                        fm.setFrequency(frequency);;
+                        getContentManager().fillContent(msg, new Action(getAID(), fm));
+	                    send(msg);
+	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
+	                    
+                    
+	                    
+					}
+
+
+
+				} catch (FIPAException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (CodecException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (OntologyException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			@Override
+            public boolean done() {
+                return true;
+            }
+        });
+  		
+  	}
+    
     private void setX(int x){
         direction.setX(x);
     }
