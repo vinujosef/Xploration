@@ -7,6 +7,7 @@ import es.upm.ontology.Location;
 import es.upm.ontology.MoveInformation;
 import es.upm.ontology.ReleaseCapsule;
 import es.upm.ontology.RequestRoverMovement;
+import es.upm.ontology.*;
 import jade.content.Concept;
 import jade.content.lang.Codec;
 import jade.content.lang.Codec.CodecException;
@@ -34,6 +35,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.joda.time.DateTime;
 import jade.core.Runtime;
 
@@ -59,10 +63,9 @@ public class Broker extends Agent{
         DFAgentDescription dfd = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setName(this.getName());
-        sd.setType(ontology.PROTOCOL_MOVE_INFO);
+        sd.setType("Broker");
         dfd.addServices(sd);
-        sd.setType(ontology.PROTOCOL_SEND_FINDINGS);
-        dfd.addServices(sd);
+        
         
         try {
             //registers description in DF
@@ -107,39 +110,27 @@ public class Broker extends Agent{
                             msg2.setLanguage(codec.getName());
                             //Should be calculate and identify it's the rover in range
                             for(int i = 0; i < AgentList.size(); i++){
-                            	msg2.addReceiver(AgentList.get(i));
-                                msg2.setProtocol(ontology.PROTOCOL_MOVE_INFO);
-                                getContentManager().fillContent(msg2, new Action(getAID(), mi));
-                                send(msg2);
-                                System.out.println(myAgent.getLocalName() + " sending communicate information to " + AgentList.get(i));
-                            }
-                            
-                            //change to: check if any rover in range, and should create a new Behavior!!!!!!
-                            /*
-                            int a = new java.util.Random().nextInt(2);
-                            /
-                            if(a==1)	//"this should be replace by calculate"
-                            {
-                            	ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
-                                msg2.setOntology(ontology.getName());
-                                msg2.setLanguage(codec.getName());
-                                //Should be calculate and identify it's the rover in range
-                                msg2.addReceiver(msg.getSender());
-                                msg2.setProtocol(ontology.PROTOCOL_MOVE_INFO);
-                                getContentManager().fillContent(msg2, new Action(getAID(), mi));
-                                send(msg2);
+                            	String line1 = AgentList.get(i).getLocalName();
+                            	Pattern pattern1 = Pattern.compile("Rover05");
+                     	        Matcher matcher1 = pattern1.matcher(line1);
+                     	        Pattern pattern = Pattern.compile("Rover.*?");
+                     	        Matcher matcher = pattern.matcher(line1);
+                     	        if(matcher1.matches()){
+                     	        	continue;
+                     	        }
+                     	        else if(matcher.matches()){
+                     	        	msg2.addReceiver(AgentList.get(i));
+                                    msg2.setProtocol(ontology.PROTOCOL_MOVE_INFO);
+                                    getContentManager().fillContent(msg2, new Action(getAID(), mi));
+                                    send(msg2);
+                                    System.out.println(myAgent.getLocalName() + " sending communicate information to " + AgentList.get(i).getLocalName());
                                 
-                                System.out.println(myAgent.getLocalName() + " sending communicate information to Rover05");
+                     	        }
+                     	        else continue;
                             }
-                            else return;
-                            */
-                            /*
-                            ACLMessage reply = msg.createReply();
-                            reply.setPerformative(ACLMessage.AGREE);
-                        	myAgent.send(reply);
-                        	System.out.println(myAgent.getLocalName() + " sent a AGREE to " + (msg.getSender()).getLocalName());
-                            Thread.sleep(5000);
-                            */
+                            	
+                     	                               
+                          
                         } catch (Codec.CodecException e) {
                             e.printStackTrace();
                         } catch (OntologyException e) {
@@ -148,8 +139,58 @@ public class Broker extends Agent{
 							e.printStackTrace();
 						}*/
                 	}
-                	else if(msg.getProtocol() == ontology.PROTOCOL_SEND_FINDINGS){ 
-                		System.out.println(myAgent.getLocalName() + " NOT IN RANGE ");
+                	else if(msg.getProtocol() == ontology.PROTOCOL_SEND_FINDINGS){
+                		System.out.println(myAgent.getLocalName() + " got FINDINGS from "+ (msg.getSender()).getLocalName());
+                		try {
+                            Action ac = (Action) getContentManager().extractContent(msg);
+                            FindingsMessage fm = (FindingsMessage) ac.getAction();
+                            
+                            
+                            
+                            ArrayList<AID> AgentList = new ArrayList<AID>();
+                            AgentList = inRange(roversLocations.get(msg.getSender()));
+                            /*
+                            for(AID aid:roversLocations.keySet()){
+                            	System.out.println(aid.getLocalName() + roversLocations.get(aid).getX() + roversLocations.get(aid).getY());
+                            }*/
+                            
+                            
+                            ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
+                            msg2.setOntology(ontology.getName());
+                            msg2.setLanguage(codec.getName());
+                            //Should be calculate and identify it's the rover in range
+                            int i;
+                            for(i = 0; i < AgentList.size(); i++){
+                            	String line1 = AgentList.get(i).getLocalName();
+                            	
+                            	
+                                
+                     	        Pattern pattern = Pattern.compile("Capsule05");
+                     	        Matcher matcher = pattern.matcher(line1);
+                     	        if(matcher.matches()){
+                     	        	msg2.addReceiver(AgentList.get(i));
+                                    msg2.setProtocol(ontology.PROTOCOL_SEND_FINDINGS);
+                                    getContentManager().fillContent(msg2, new Action(getAID(), fm));
+                                    send(msg2);
+                                    System.out.println(myAgent.getLocalName() + " sending Findings information to " + AgentList.get(i).getLocalName());
+                                    break;
+                     	        }
+                     	        else continue;
+                            }
+                            if(i>=AgentList.size())
+                            {
+                            	System.out.println(AgentList.size());
+                            	System.out.println("Capsule05 NOT IN RANGE ");
+                            }
+                            	
+                     	                               
+                            
+                        } catch (Codec.CodecException e) {
+                            e.printStackTrace();
+                        } catch (OntologyException e) {
+                            e.printStackTrace();
+                        }
+                		
                 	}
                 }
                 
@@ -161,33 +202,7 @@ public class Broker extends Agent{
             }
         });
         
-        /*
-         * TODO Adding calculation of rovers' locations
-         * 
-         * The behavior below will be triggered when the calculation is done
-         
-       addBehaviour(new SimpleBehaviour(this)
-        {
-            @Override
-            public void action() {
-                ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-                    msg.setOntology(ontology.getName());
-                    msg.setLanguage(codec.getName());
-                    msg.addReceiver(TODO add receiver from calculation);
-                    msg.setProtocol(ontology.PROTOCOL_MOVE_INFO);
-                    System.out.println(myAgent.getLocalName() + " sending REQUEST to + TODO Rover's Name");
-                    send(msg); 
-                
-            }
-
-            @Override
-            public boolean done() {
-                return false;
-            }
-        });
-          
-         
-         */
+        
         
         
     }
@@ -226,11 +241,8 @@ public class Broker extends Agent{
   		int y = loc.getY();
   		Location[] locationRange = new Location[18];
   		for(int i = 0; i < 18; i++){
-  			locationRange[i] = loc;
+  			locationRange[i] = new Location();
   		}
-  		
-  		
-  		
   		
   		locationRange[0].setX(judgeX(x - 2)); locationRange[0].setY(y);
   		locationRange[1].setX(judgeX(x - 1)); locationRange[1].setY(judgeY(y + 1));
@@ -251,11 +263,15 @@ public class Broker extends Agent{
   		locationRange[16].setX(judgeX(x - 2)); locationRange[16].setY(judgeY(y - 2));
   		locationRange[17].setX(judgeX(x - 3)); locationRange[17].setY(judgeY(y - 1));
   		
+  		
   		ArrayList<AID> agentList = new ArrayList<AID>();
   		
   		for(AID aid: roversLocations.keySet()){
+  			
 			for(int i = 0; i < 18; i++){
-				if(roversLocations.get(aid).equals(locationRange[i])){					
+				
+				if(roversLocations.get(aid).getX()==locationRange[i].getX() && roversLocations.get(aid).getY()==locationRange[i].getY()){	
+					System.out.println(aid.getName());
 					agentList.add(aid);
 					break;
 				}

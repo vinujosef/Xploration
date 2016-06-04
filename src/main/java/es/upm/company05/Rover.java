@@ -240,8 +240,19 @@ public class Rover extends Agent{
                 else{
                     if(msg.getProtocol() == ontology.PROTOCOL_ROVER_MOVEMENT){
                         System.out.println(myAgent.getLocalName() + " received an INFORM from "+ (msg.getSender()).getLocalName());
-                        System.out.println("-------------------------------------");
+                        /*
+                         * Finially change the location information on Rover agent it self
+                         */
+                        Location nLoc = new Location();
                         
+                        nLoc = CaculateLocation(location,direction);
+                        
+                        location.setX(nLoc.getX());
+                        location.setY(nLoc.getY());
+                        /*
+                         * Then start to analyze immediately
+                         */
+                        System.out.println("-------------------------------------");
                         System.out.println("Start to analyze!!!");
                         ACLMessage msg2 = new ACLMessage(ACLMessage.REQUEST);
                         msg2.setOntology(ontology.getName());
@@ -262,13 +273,18 @@ public class Rover extends Agent{
                         try {
                             ce = (Action) getContentManager().extractContent(msg);
                             mr = (MineralResult) ((Action)ce).getAction();
+                            analyzeResults.put(location,mr.getMineral());
+                            System.out.println(myAgent.getLocalName() + " received an MineralResult from "+ (msg.getSender()).getLocalName()+" "+mr.getMineral().getType());
+                            
                             finding.setLocation(location);
                             finding.setMineral(mr.getMineral());
                             findings.addFinding(finding);
+                            
+                            
                             //AskforUpdate(findings);
                             DFAgentDescription dfd = new DFAgentDescription();
                             ServiceDescription sd = new ServiceDescription();
-                            sd.setType(ontology.PROTOCOL_SEND_FINDINGS);
+                            sd.setType("Broker");
                             dfd.addServices(sd);
                             DFAgentDescription[] results = new DFAgentDescription[20];
                             try {
@@ -277,21 +293,21 @@ public class Rover extends Agent{
             	                    if(results[i]==null){
             	                        break;
             	                    }
-            	                    else if(results[i].getName().getLocalName().equals("Broker")){
-            	                    	ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
-                	                    
-                	                    msg2.setOntology(ontology.getName());
-                	                    msg2.setLanguage(codec.getName());
-                	                    msg2.addReceiver(results[i].getName());
-                	                    msg2.setProtocol(ontology.PROTOCOL_SEND_FINDINGS);
-                	                    FindingsMessage fm = new FindingsMessage();
-                                        fm.setFindings(findings);
-                                        fm.setFrequency(frequency);;
-                                        getContentManager().fillContent(msg2, new Action(getAID(), fm));
-                	                    send(msg2);
-                	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
-                	                    
-            	                    }
+            	                    ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
+            	                    
+            	                    msg2.setOntology(ontology.getName());
+            	                    msg2.setLanguage(codec.getName());
+            	                    msg2.addReceiver(results[i].getName());
+            	                    msg2.setProtocol(ontology.PROTOCOL_SEND_FINDINGS);
+            	                    FindingsMessage fm = new FindingsMessage();
+                                    fm.setFindings(findings);
+                                    fm.setFrequency(frequency);
+                                    
+                                    getContentManager().fillContent(msg2, new Action(getAID(), fm));
+            	                    send(msg2);
+            	                    
+            	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
+            	                    break;
                                 
             	                    
             					}
@@ -308,9 +324,8 @@ public class Rover extends Agent{
             					// TODO Auto-generated catch block
             					e.printStackTrace();
             				}
-                            System.out.println(myAgent.getLocalName() + " received an MineralResult from "+ (msg.getSender()).getLocalName()+" "+mr.getMineral().getType());
                             
-                            analyzeResults.put(location,mr.getMineral());
+                            
                             
                             //After all the work, have a rest for 1 s
                             try {
@@ -331,6 +346,9 @@ public class Rover extends Agent{
                         }
 
                     }
+                    /*
+                     * Receive Move information from Broker
+                     */
                     else if(msg.getProtocol() == ontology.PROTOCOL_MOVE_INFO){
                 		ContentElement ce;
                 		try {
@@ -383,7 +401,7 @@ public class Rover extends Agent{
     			setX(new java.util.Random().nextInt(6 - 1 + 1) + 1);
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
-                sd.setType(ontology.PROTOCOL_ROVER_MOVEMENT);
+                sd.setType("World");
                 dfd.addServices(sd);
                 DFAgentDescription[] results = new DFAgentDescription[20];
 
@@ -410,7 +428,7 @@ public class Rover extends Agent{
                                                                        
                         dfd = new DFAgentDescription();
                         sd = new ServiceDescription();
-                        sd.setType(ontology.PROTOCOL_MOVE_INFO);
+                        sd.setType("Broker");
                         dfd.addServices(sd);
                         results = new DFAgentDescription[20];
                         
@@ -463,7 +481,7 @@ public class Rover extends Agent{
 				
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
-                sd.setType(ontology.PROTOCOL_ROVER_MOVEMENT);
+                sd.setType("World");
                 dfd.addServices(sd);
                 DFAgentDescription[] results = new DFAgentDescription[20];
                 try {
@@ -544,64 +562,7 @@ public class Rover extends Agent{
   		
   	}
     
-    //Behavior Update findingS
-    protected void AskforUpdate(Findings fi){
-    	
-    	addBehaviour(new SimpleBehaviour(this){
-
-			@Override
-			public void action() {
-				
-                DFAgentDescription dfd = new DFAgentDescription();
-                ServiceDescription sd = new ServiceDescription();
-                sd.setType(ontology.PROTOCOL_SEND_FINDINGS);
-                dfd.addServices(sd);
-                DFAgentDescription[] results = new DFAgentDescription[20];
-                try {
-					results = DFService.search(myAgent,dfd);
-					for(int i=0;i<results.length;i++){
-	                    if(results[i]==null){
-	                        break;
-	                    }
-	                    
-	                    ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
-	                    
-	                    msg.setOntology(ontology.getName());
-	                    msg.setLanguage(codec.getName());
-	                    msg.addReceiver(results[i].getName());
-	                    msg.setProtocol(ontology.PROTOCOL_SEND_FINDINGS);
-	                    FindingsMessage fm = new FindingsMessage();
-                        fm.setFindings(fi);
-                        fm.setFrequency(frequency);;
-                        getContentManager().fillContent(msg, new Action(getAID(), fm));
-	                    send(msg);
-	                    System.out.println(myAgent.getLocalName() + " sending Findings to "+results[i].getName().getLocalName());
-	                    
-                    
-	                    
-					}
-
-
-
-				} catch (FIPAException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (CodecException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (OntologyException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			@Override
-            public boolean done() {
-                return true;
-            }
-        });
-  		
-  	}
+   
     
     private void setX(int x){
         direction.setX(x);

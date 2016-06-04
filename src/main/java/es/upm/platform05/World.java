@@ -69,7 +69,7 @@ public class World extends Agent{
 		DFAgentDescription dfd = new DFAgentDescription();
 		ServiceDescription sd = new ServiceDescription();
 		sd.setName(this.getName());
-		sd.setType(ontology.PROTOCOL_ROVER_MOVEMENT);
+		sd.setType("World");
 		dfd.addServices(sd);
 
 		try {
@@ -348,6 +348,7 @@ public class World extends Agent{
 						roversLocations.remove(msg.getSender());
 						roversLocations.put(msg.getSender(), NewLoc);
 						roversDirections.remove(msg.getSender());
+						
                 		/*
                 		 * TODO calculate new location
                 		 */
