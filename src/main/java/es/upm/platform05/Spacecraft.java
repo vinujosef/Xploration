@@ -7,8 +7,11 @@ package es.upm.platform05;
 
 import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.XplorationOntology;
+import es.upm.ontology.FindingsMessage;
 import es.upm.ontology.Location;
+import es.upm.ontology.MoveInformation;
 import es.upm.ontology.ReleaseCapsule;
+import es.upm.ontology.*;
 import jade.content.Concept;
 import jade.content.lang.Codec;
 import jade.content.lang.Codec.CodecException;
@@ -20,6 +23,8 @@ import jade.core.Agent;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.SimpleBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -32,9 +37,13 @@ import jade.wrapper.ControllerException;
 import jade.wrapper.StaleProxyException;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.joda.time.DateTime;
 import jade.core.Runtime;
 /**
@@ -50,6 +59,7 @@ public class Spacecraft extends Agent{
     Codec codec = new SLCodec();
     ArrayList<String> companyList = new ArrayList<>();
     public final static HashMap<AID, Location> roversLocations = new HashMap<AID, Location>();
+    HashMap<AID,Finding> companyFinding = new HashMap<AID, Finding>();
 
 
     protected void setup(){
@@ -127,11 +137,10 @@ public class Spacecraft extends Agent{
                                 for(int j=0; j < companyList.size(); j++) {
                                     System.out.println(companyList.get(j));
                                 }
+                                //release the capsules
+                                release(msg.getSender());
                             }
                             send(registration_reply);
-
-                            //release the capsules
-                            release(msg.getSender());
 
 
                         } catch (Codec.CodecException e) {
@@ -149,16 +158,76 @@ public class Spacecraft extends Agent{
             }
         });
 
+
+        // Receiving update inform messages from Capsule
+        addBehaviour(new SimpleBehaviour(this)
+        {
+            @Override
+            public void action() {
+                ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+
+                if(msg == null) return;
+                else{
+
+
+                    if(msg.getProtocol() == ontology.PROTOCOL_UPDATE_FINDINGS){
+                        System.out.println(myAgent.getLocalName() + " got FINDINGS from "+ (msg.getSender()).getLocalName());
+                        Action ac;
+                        try {
+                            ac = (Action) getContentManager().extractContent(msg);
+                            FindingsMessage fm = (FindingsMessage) ac.getAction();
+
+                            Iterator it =  fm.getFindings().getAllFinding();
+                            while(it.hasNext()){
+
+                                Finding find = (Finding) it.next();
+
+                                if(companyFinding.containsValue(find)) continue;
+                                else {
+                                    companyFinding.put(msg.getSender(), find);
+                                    System.out.println(find.getMineral().getType()+" "+find.getLocation().getX()+" "+find.getLocation().getY());
+                                }
+                            }
+                        } catch (CodecException | OntologyException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+
+                    }
+
+
+                }
+
+            }
+
+            @Override
+            public boolean done() {
+                return false;
+            }
+        });
     }
 
     protected void release(AID receiver){
 
         Location location = new Location();
-        location.setX(new java.util.Random().nextInt(20));
-        location.setY(new java.util.Random().nextInt(20));
+        int x=new java.util.Random().nextInt(10)+1;
+        int y;
+        if(x%2==0)
+        {
+            y = new java.util.Random().nextInt(4)*2 + 2;
+        }
+        else
+        {
+            y = new java.util.Random().nextInt(4)*2 + 1;
+        }
+
+
+        location.setX(x);
+        location.setY(y);
 
         //send a message to company
-        addBehaviour(new CyclicBehaviour(this)
+        addBehaviour(new OneShotBehaviour(this)
         {
             public void action() {
                 doWait(500);
@@ -169,6 +238,7 @@ public class Spacecraft extends Agent{
                 msg.setProtocol(ontology.PROTOCOL_RELEASE_CAPSULE);
                 ReleaseCapsule releaseCapsule = new ReleaseCapsule();
                 releaseCapsule.setLocation(location);
+                roversLocations.put(receiver, location);
                 try {
                     getContentManager().fillContent(msg, new Action(getAID(), releaseCapsule));
                     System.out.println(myAgent.getLocalName() + " sending a message to release capsules");
