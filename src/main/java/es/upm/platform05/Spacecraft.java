@@ -5,6 +5,7 @@
  */
 package es.upm.platform05;
 
+
 import es.upm.ontology.RegistrationRequest;
 import es.upm.ontology.XplorationOntology;
 import es.upm.ontology.FindingsMessage;
@@ -38,6 +39,9 @@ import jade.wrapper.StaleProxyException;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,8 +63,9 @@ public class Spacecraft extends Agent{
     Codec codec = new SLCodec();
     ArrayList<String> companyList = new ArrayList<>();
     public final static HashMap<AID, Location> roversLocations = new HashMap<AID, Location>();
-    HashMap<AID,Finding> companyFinding = new HashMap<AID, Finding>();
-
+    HashMap<Finding,AID> companyFinding = new HashMap<Finding, AID>();
+    String[][] map = null;
+    
     protected void setup(){
         System.out.println(getLocalName()+ " has entered into the system");
         getContentManager().registerOntology(ontology);
@@ -79,11 +84,15 @@ public class Spacecraft extends Agent{
         try {
             //registers description in DF
             DFService.register(this,dfd);
+            map = readMap();
         }
 
         catch (FIPAException ex) {
             Logger.getLogger(Spacecraft.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        } catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
         DateTime finalcall = DateTime.now().plusMinutes(1);
 //        DateTime finalcall = DateTime.now().plusSeconds(10);
@@ -184,14 +193,42 @@ public class Spacecraft extends Agent{
 							
 							Iterator it =  fm.getFindings().getAllFinding();
 							while(it.hasNext()){
-								
+								boolean flag = true;
 								Finding find = (Finding) it.next();
+								int xM = find.getLocation().getX();
+								int yM = find.getLocation().getY();
 								
-								if(companyFinding.containsValue(find)) continue;
-								else {
-									companyFinding.put(msg.getSender(), find);
-									System.out.println(find.getMineral().getType()+" "+find.getLocation().getX()+" "+find.getLocation().getY());
+								String min = find.getMineral().getType();
+								Pattern pattern = Pattern.compile(map[xM][yM]);
+                     	        Matcher matcher = pattern.matcher(min);
+                     	        for(Finding fi: companyFinding.keySet()){
+                     	        	
+                     	        	if(yM==fi.getLocation().getY()){
+                     	        		
+                     	        		if(xM==fi.getLocation().getX()){
+                     	        			
+                     	        			if(find.getMineral().getType().equals(fi.getMineral().getType())){
+                     	        				flag=false;
+                             	        		
+                             	        		break;
+                     	        			}
+                     	        				
+                     	        		}
+                     	        		
+                     	        	}
+                     	        }
+                     	        
+								if(flag  && matcher.matches()) {
+									
+									companyFinding.put(find , msg.getSender());
+									
+									
+									
 								}
+							}
+							for(Finding find: companyFinding.keySet()){
+								System.out.println(msg.getSender().getLocalName()+" "+find.getMineral().getType()+" "+
+										find.getLocation().getX()+" "+find.getLocation().getY());
 							}
 						} catch (CodecException | OntologyException e) {
 							// TODO Auto-generated catch block
@@ -257,5 +294,43 @@ public class Spacecraft extends Agent{
         });
 
     }
+  //readmap
+  	protected String[][] readMap() throws Exception{
+  		
+  		String[][] map = null;
+  		BufferedReader reader = new BufferedReader(new FileReader("/Users/mb15/Desktop/abs-project/9.0/test/src/es/upm/map/map.txt"));  
+  	       //System.out.println(reader.readLine());
+  	       String line;
+  	       int row = 0;
+  			
+  			
+  			try {
+  				while((line = reader.readLine()) != null){
+  					String[] texts = line.split("\t");
+  					if(map == null){
+  						try{
+  							int x = Integer.parseInt(texts[0]);
+  							int y = Integer.parseInt(texts[1]);
+  							map = new String[x+1][y+1];
+  						}
+  						catch(NumberFormatException e){
+  							e.printStackTrace();
+  						}
+  					}
+  					else{
+  						for(int i=0; i<texts.length; i++){
+  							map[row+1][i+1] = texts[i];
+  						}
+  						row++;
+  					}
+  				}
+  			} catch (IOException e) {
+  				// TODO Auto-generated catch block
+  				e.printStackTrace();
+  			}
+  			
+  		
+  		return map;
+  	}
 
 }

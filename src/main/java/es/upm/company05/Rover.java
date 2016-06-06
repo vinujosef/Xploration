@@ -1,12 +1,6 @@
 package es.upm.company05;
 
-import es.upm.ontology.RegistrationRequest;
-import es.upm.ontology.ReleaseCapsule;
-import es.upm.ontology.RequestRoverMovement;
-import es.upm.ontology.XplorationOntology;
 import es.upm.platform05.*;
-import es.upm.ontology.Direction;
-import es.upm.ontology.Location;
 import es.upm.ontology.*;
 import jade.content.ContentElement;
 import jade.content.lang.Codec;
@@ -29,12 +23,17 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
+import jade.util.leap.ArrayList;
+import jade.util.leap.List;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.ControllerException;
 import jade.wrapper.StaleProxyException;
 
+
 import java.util.HashMap;
+import java.util.Iterator;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,10 +66,18 @@ public class Rover extends Agent{
                 int y = (int) myAgent.getArguments()[1];
                 location.setX(x);
                 location.setY(y);
+                Location loc = new Location();
+                loc.setX(location.getX());
+                loc.setY(location.getY());
+                mineral.setType("A");
+                Mineral min = new Mineral();
+                min.setType(mineral.getType());
                 roversLocations.put(getAID(), location);
                 rover05.setName(getAID().getName());
                 rover05.setRover_agent(getAID());
                 frequency.setChannel(5);
+                finding.setLocation(loc);
+                finding.setMineral(min);
                 System.out.println("-------------------------------------");
             }
         });
@@ -243,12 +250,18 @@ public class Rover extends Agent{
                         /*
                          * Finially change the location information on Rover agent it self
                          */
+                        
                         Location nLoc = new Location();
                         
                         nLoc = CaculateLocation(location,direction);
                         
+                        
+                        
                         location.setX(nLoc.getX());
                         location.setY(nLoc.getY());
+                        
+                        
+                        
                         /*
                          * Then start to analyze immediately
                          */
@@ -275,11 +288,19 @@ public class Rover extends Agent{
                             mr = (MineralResult) ((Action)ce).getAction();
                             analyzeResults.put(location,mr.getMineral());
                             System.out.println(myAgent.getLocalName() + " received an MineralResult from "+ (msg.getSender()).getLocalName()+" "+mr.getMineral().getType());
+                            Location loc = new Location();
                             
-                            finding.setLocation(location);
-                            finding.setMineral(mr.getMineral());
-                            findings.addFinding(finding);
+                            loc.setX(location.getX());
+                            loc.setY(location.getY());
                             
+                            Mineral min = new Mineral();
+                            min.setType(mr.getMineral().getType());
+                           
+                            Finding newF = new Finding();
+                            newF.setLocation(loc);
+                            newF.setMineral(min);                           
+                           
+                            findings.addFinding(newF);
                             
                             //AskforUpdate(findings);
                             DFAgentDescription dfd = new DFAgentDescription();
@@ -398,7 +419,7 @@ public class Rover extends Agent{
     		@Override
             public void action() {
     			
-    			setX(new java.util.Random().nextInt(6 - 1 + 1) + 1);
+    			direction.setX(new java.util.Random().nextInt(6 - 1 + 1) + 1);
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
                 sd.setType("World");
@@ -564,12 +585,6 @@ public class Rover extends Agent{
     
    
     
-    private void setX(int x){
-        direction.setX(x);
-    }
-
-    private int getX(){
-        return direction.getX();
-    }
+ 
 
 }

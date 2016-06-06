@@ -57,7 +57,7 @@ public class World extends Agent{
 	HashMap<AID, Direction> roversDirections = new HashMap<AID, Direction>();
 	HashMap<AID, Location> roversLocations = Spacecraft.roversLocations;
 	HashMap<AID, Mineral> mineralResults = new HashMap<AID, Mineral>();
-	String[][] map;
+	String[][] map = null;
 	
 	
 
